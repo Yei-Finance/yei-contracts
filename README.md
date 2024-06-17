@@ -130,81 +130,80 @@ npm run test
 ### Protocol
 | Contract Name    | Address |
 | -------- | ------- |
-| ACLManager  | 0x9F43863188A571885BDC2624CDbB0f69e92F7c9B    |
-| Oracle | 0xC2C564f2BeDa896635fd00E767fc9D5A114114Ef     |
-| PoolAddressesProvider    | 0xF87151Ee99C53Bedf04d11F3e2eAF7e0b7199453    |
-| PoolAddressesProviderRegistry  | 0x2c66c91d0B502e39CaA1193bf87A123109bdd801    |
-| Pool-Proxy | 0x297Ac5f3AdCBF537b8d676c2Cf7C0ADFae27e974     |
-| PoolConfigurator-Proxy    | 0xE1C71CFC94cb1ef15BBcc5937D174912a48D0f52    |
-| PoolDataProvider | 0xda57E7dD329b7B83671538a22Ae66a4fFFf97443     |
-| IncentivesProxy    | 0xC518cE1404017208aF582F2a5F4c55b632F8d56C    |
-| EmissionManager | 0x69599C4d548d02c3310a194Da92CD6076aFb907E     |
-| TreasuryController    | 0xD32e65b90f147Ea9D449BDBA6597a9ad54A2c2c0    |
-| Treasury | 0x5461fEc48EC5048200Bc47f37028D075eCdA6e58     |
-| PullTransferStrategy    | 0xf06b0F059472198eb2f586ad135E6e37949bF6FA    |
-| Incentive-Implementation | 0x26D921664B704E9034C72bDdfF8073611f399c65     |
-| PoolConfigurator-Proxy    | 0xE1C71CFC94cb1ef15BBcc5937D174912a48D0f52    |
-| Pool-Implementation | 0x1121dF06067156cccAaff0Fa7153CDF5Edd3ab3c     |
-| PoolConfiguration-Implementation    | 0x6996682D24604B16b293A85Af697a2fAa9d46F6F    |
-| Treasury-Implementation | 0x13DBdb345895DbAA9A4E43eb87Fa1D582A4797a1     |
-| WalletBalanceProvider    |  0x445D9B2a9338A9651C818Ec38F6f505882303983  |
-| WrappedTokenGatewayV3 |   0x5eD4B77D16279Eb13E892228b520615E6bC4b296   |
-| UiIncentiveDataProviderV3    | 0x843a26fB1e2fcE303620E9035B73340338506a32    |
-| UiPoolDataProviderV3    | 0xFC0D48A7442a6daD7E8f20f25AF87b0c7Ba9986F    |
+| ACLManager  | 0x241995B768C1ae629EB5A6F3749C6E7b8C4d47F2    |
+| Oracle | 0xA1ce28cEbaB91d8dF346D19970E4Ee69A6989734     |
+| PoolAddressesProvider    | 0x5C57266688A4aD1d3aB61209ebcb967B84227642    |
+| PoolAddressesProviderRegistry  | 0x8138Da4417340594AeEa4BE8FBC7693d9875B6CB    |
+| Pool-Proxy | 0x4a4d9abD36F923cBA0Af62A39C01dEC2944fb638     |
+| PoolConfigurator-Proxy    | 0xf8157786e3401A7377BECb7Af288b84c8eE614E1    |
+| PoolDataProvider | 0x60c82A40C57736a9c692C42e87A8849Fb407F0d6     |
+| IncentivesProxy    | 0x60485C5E5E3D535B16CC1bd2C9243C7877374259    |
+| EmissionManager | 0x69ea2c310a950E58984f4bEc4acCf2ECe391dafD     |
+| TreasuryController    | 0x4eC5e3f9A32aaBD6AF62B9A22188F429d65F39c7    |
+| Treasury | 0xbf63C919A8C15f4741E75c232c7Be0d0af4d1D05     |
+| PullTransferStrategy    | 0x67b440B71Fa2CB8e9a91A4FfB3E89A6976FcC608    |
+| Incentive-Implementation | 0x800F3E929686eC90EeAAbB8b98ED1eFF126d532c     |
+| Pool-Implementation | 0xd078C43f88Fbed47b3Ce16Dc361606B594c8F305     |
+| PoolConfiguration-Implementation    | 0x80C4cdee95E52a8ad2C57eC3265Bea3A9c91669D    |
+| Treasury-Implementation | 0x374865D6Aa24A7523a6176cE25e05cF6dc826304     |
+| WalletBalanceProvider    |  0x81fCEe5b9536DC0C626ddAe6c84B9802842a57AE  |
+| WrappedTokenGatewayV3 |   0x10E4970D5C22aDf49a3CeEd9c01d66775C065f8E   |
+| UiIncentiveDataProviderV3    | 0xD25Ce1D2F20868C610726a9d7c675EA9A8359c55    |
+| UiPoolDataProviderV3    | 0xeB0CC27b656775bF27Dc7A3c1cf570e002f727Da    |
 
 ### Oracle
 | Asset    | Address |
 | -------- | ------- |
-| SEI  | 0xDCC0CfA48eCaD4ce2fB35d259964eEBF7D38FFA7    |
-| USDC | 0x1995C946cB7c74c3EbDA3BE5EEcBD6559CfFdce4     |
-| USDT    | 0xe78625491B358873516CeEd3450ba547585193bF    |
-| ETH  | 0x3bE7a85cc186a8659097b584C677462577a1095C    |
+| SEI  | 0xa2aCDc40e5ebCE7f8554E66eCe6734937A48B3f3    |
+| USDC | 0xEAb459AD7611D5223A408A2e73b69173F61bb808     |
+| USDT    | 0x284db472a483e115e3422dd30288b24182E36DdB    |
+| ETH  | 0x3E45Fb956D2Ba2CB5Fa561c40E5912225E64F7B2    |
 
 ### Logic
 | Contract Name    | Address |
 | -------- | ------- |
-| BorrowLogic  | 0x1959BfD20e4738fcA2c22B15E8c4B4eeB37dc4D5    |
-| BridgeLogic | 0x832f5975993953BDe07Ab5975F44B24125F6070f     |
-| ConfiguratorLogic    | 0xA7cdE1312dC648C8a4820737bE2d158A12c004c3    |
-| EModeLogic  | 0xedAc7B9ae8A4b5e23cAC5DF88e9F4F8E7A454AF5    |
-| FlashLoanLogic | 0xffFF245dD7be925CbA08BF0c9BF234e6F8afeF4D     |
-| LiquidationLogic    | 0x1008709e82868500D67A7dEDadf0b6275B1b6F2c    |
-| PoolLogic  | 0x5C70eE2211d70feb76e848690a34aC5FA91bA17C    |
-| SupplyLogic | 0xc5eB743DA748c8DCDc8485F4D99d8cF002D50403     |
-| ReservesSetupHelper    | 0x893a057E0F21e74579703152aC0FaB032964A96e    |
+| BorrowLogic  | 0xF7dD04ecbB8De9569A9Dd2D2Cc546fa8e579B54E    |
+| BridgeLogic | 0x3b28C1c795F1382a083D822dc2997eeF49505643     |
+| ConfiguratorLogic    | 0xBed70224331e0A01C0b194163f8242Ad7AF3cAbF    |
+| EModeLogic  | 0x81dEEcD10A76C1da037079EeB09D0b84e746C038    |
+| FlashLoanLogic | 0xA4bFc89476eA68A0a649612BB259aac8E2f2Bb19     |
+| LiquidationLogic    | 0x5d1c6e0D69e962851b315BC9eff92D5189189c6b    |
+| PoolLogic  | 0x8301B04D9641aD2C52Be2108B0b41d0F9164254D    |
+| SupplyLogic | 0x0F8286f6aa0ecF83C9C1d87DAc974871D0573421     |
+| ReservesSetupHelper    | 0x3132Fe205aCcd04295789FF1FB3abcc10aC3d5c6    |
 
 ### Token
 #### Implementation
 | Name    | Address |
 | -------- | ------- |
-| AToken  | 0x2eA8987cC74058E9B31ff4e9B47E00Ecaea3da21    |
-| DelegationAwareAToken | 0x9F20478b19c0cf07175B26b71F369165a1aE7De3     |
-| StableDebtToken    | 0x6E6b91b1D0eeDc84342179fD43ABD45a1769760a    |
-| VariableDevtToken  | 0x14af6D103e9270A60c2FA0C412898CEd92714E35    |
+| AToken  | 0x51c5FD7783358aFe244EBB74aa8963e152FAd73b    |
+| DelegationAwareAToken | 0xc6388fDC02066849643059F0265202109f83b74A     |
+| StableDebtToken    | 0xEE2aAa4329AD3aaDDD1Ac8e986e174760ba0a4F3    |
+| VariableDevtToken  | 0xC7aea6F527fd67E190165000118330Bc5eac26F9    |
 
 #### USDC
 | Name    | Address |
 | -------- | ------- |
 | USDC  | 0x3894085Ef7Ff0f0aeDf52E2A2704928d1Ec074F1    |
-| USDC-AToken | 0xF37d13B0008b177fF47296Fc0A15c9935086821d     |
-| USDC-VariableDebtToken    | 0xBd046d6134529dfcBAD43Bb5860dB810Ef907A71    |
-| USDC-StableDebtToken  | 0xfA17185Ac2f375072301147597c760Aa2b858d35    |
-| USDC-RateStrategy  | 0xB1b1Ede4d925530ae4c3047c0C31F7B12E9Cd81a    |
+| USDC-AToken | 0xc1a6F27a4CcbABB1C2b1F8E98478e52d3D3cB935     |
+| USDC-VariableDebtToken    | 0x5Bfc2d187e8c7F51BE6d547B43A1b3160D72a142    |
+| USDC-StableDebtToken  | 0xe8348837A3be3212E50F030DFf935Ae0A0eA4B54    |
+| USDC-RateStrategy  | 0xa753CB2ED8dA813aA1FD4C64C7BB0FE034D8cfbb    |
 
 #### USDT
 | Name    | Address |
 | -------- | ------- |
 | USDT  | 0xB75D0B03c06A926e488e2659DF1A861F860bD3d1    |
-| USDT-AToken | 0x16466Ec0CE0c300D5f66Db4992b610519c8e8Fce     |
-| USDT-VariableDebtToken    | 0x37B72b33edbEa00A359124D7DEDDC08E23Dc297c    |
-| USDT-StableDebtToken  | 0x069f8b5CD7C95EF8E6F95b2e662eBc775aE19319    |
-| USDT-RateStrategy  | 0x2c466033a4C776A292f764B42D1FC233dA001794    |
+| USDT-AToken | 0x945C042a18A90Dd7adb88922387D12EfE32F4171     |
+| USDT-VariableDebtToken    | 0x25eA70DC3332b9960E1284D57ED2f6A90d4a8373    |
+| USDT-StableDebtToken  | 0x04Ba7e1387dcBE7e1fC43Dc8dE5dE8A73a77b1ee    |
+| USDT-RateStrategy  | 0x80C1AFE0770287A9Ec9B6cC1ca2aAE354Ec8Af2a    |
 
 #### WSEI
 | Name    | Address |
 | -------- | ------- |
 | WSEI  | 0xE30feDd158A2e3b13e9badaeABaFc5516e95e8C7    |
-| WSEI-AToken | 0xd3C367195f96A9387564287a28D935adb44D4531     |
-| WSEI-VariableDebtToken    | 0xDA3e27305A7A29eC9f40b1380E24aE5Af803F57D    |
-| WSEI-StableDebtToken  | 0xE950be59473fe39584FD7261F9C0ADeBD19331e0    |
-| WSEI-RateStrategy  | 0xAc19b49532905Ab8B4D7637aA594f04Fb7E9122d    |
+| WSEI-AToken | 0x809FF4801aA5bDb33045d1fEC810D082490D63a4     |
+| WSEI-VariableDebtToken    | 0x648e683aaE7C18132564F8B48C625aE5038A9607    |
+| WSEI-StableDebtToken  | 0x4dE99D1f91A1d731966fa250b432fF17C9C234d9    |
+| WSEI-RateStrategy  | 0x33AFe4892aB282544C8700a61984886D44E96EaC    |
