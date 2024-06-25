@@ -14,6 +14,9 @@
  -/:             :/-  -/:             :/.     ://:         `/////////////-
 ```
 
+# Dev Doc
+
+[Link](https://yei-finance.notion.site/Prepare-Dev-Doc-for-partners-f4da6221ec164e23b52eaa5875026f7d)
 # Aave Protocol v3
 
 This repository contains the smart contracts source code and markets configuration for Aave Protocol V3. The repository uses Docker Compose and Hardhat as development environment for compilation, testing and deployment tasks.
