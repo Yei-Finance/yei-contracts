@@ -150,7 +150,7 @@ npm run test
 | PoolConfiguration-Implementation    | 0x80C4cdee95E52a8ad2C57eC3265Bea3A9c91669D    |
 | Treasury-Implementation | 0x374865D6Aa24A7523a6176cE25e05cF6dc826304     |
 | WalletBalanceProvider    |  0x81fCEe5b9536DC0C626ddAe6c84B9802842a57AE  |
-| WrappedTokenGatewayV3 |   0x10E4970D5C22aDf49a3CeEd9c01d66775C065f8E   |
+| WrappedTokenGatewayV3 |   0xBc096B6a7D5404De916B3333AD223a1b32eEC8aA   |
 | UiIncentiveDataProviderV3    | 0xD25Ce1D2F20868C610726a9d7c675EA9A8359c55    |
 | UiPoolDataProviderV3    | 0xeB0CC27b656775bF27Dc7A3c1cf570e002f727Da    |
 
