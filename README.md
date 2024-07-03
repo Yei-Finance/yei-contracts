@@ -144,7 +144,7 @@ npm run test
 | EmissionManager | 0x69ea2c310a950E58984f4bEc4acCf2ECe391dafD     |
 | TreasuryController    | 0x4eC5e3f9A32aaBD6AF62B9A22188F429d65F39c7    |
 | Treasury | 0xbf63C919A8C15f4741E75c232c7Be0d0af4d1D05     |
-| PullTransferStrategy    | 0x67b440B71Fa2CB8e9a91A4FfB3E89A6976FcC608    |
+| PullTransferStrategy    | 0x127201e84aD4EE06eC15104CF083696D6354f8Dd    |
 | Incentive-Implementation | 0x800F3E929686eC90EeAAbB8b98ED1eFF126d532c     |
 | Pool-Implementation | 0xd078C43f88Fbed47b3Ce16Dc361606B594c8F305     |
 | PoolConfiguration-Implementation    | 0x80C4cdee95E52a8ad2C57eC3265Bea3A9c91669D    |
