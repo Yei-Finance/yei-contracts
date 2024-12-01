@@ -141,6 +141,7 @@ library FlashLoanLogic {
           userConfig,
           DataTypes.ExecuteBorrowParams({
             asset: vars.currentAsset,
+            poolAdmin: address(0),
             user: msg.sender,
             onBehalfOf: params.onBehalfOf,
             amount: vars.currentAmount,
@@ -152,7 +153,8 @@ library FlashLoanLogic {
             oracle: IPoolAddressesProvider(params.addressesProvider).getPriceOracle(),
             userEModeCategory: params.userEModeCategory,
             priceOracleSentinel: IPoolAddressesProvider(params.addressesProvider)
-              .getPriceOracleSentinel()
+              .getPriceOracleSentinel(),
+            borrowFeeBasisPoints: 0
           })
         );
         // no premium is paid when taking on the flashloan as debt

@@ -230,6 +230,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
       _usersConfig[onBehalfOf],
       DataTypes.ExecuteBorrowParams({
         asset: asset,
+        poolAdmin: ADDRESSES_PROVIDER.getACLAdmin(),
         user: msg.sender,
         onBehalfOf: onBehalfOf,
         amount: amount,
@@ -240,7 +241,8 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
         reservesCount: _reservesCount,
         oracle: ADDRESSES_PROVIDER.getPriceOracle(),
         userEModeCategory: _usersEModeCategory[onBehalfOf],
-        priceOracleSentinel: ADDRESSES_PROVIDER.getPriceOracleSentinel()
+        priceOracleSentinel: ADDRESSES_PROVIDER.getPriceOracleSentinel(),
+        borrowFeeBasisPoints: _borrowFees[asset]
       })
     );
   }
@@ -452,6 +454,10 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     return _reserves[asset];
   }
 
+  function getBorrowFee(address asset) external view virtual returns (uint256) {
+    return _borrowFees[asset];
+  }
+
   /// @inheritdoc IPool
   function getUserAccountData(
     address user
@@ -642,6 +648,10 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     require(asset != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
     require(_reserves[asset].id != 0 || _reservesList[0] == asset, Errors.ASSET_NOT_LISTED);
     _reserves[asset].configuration = configuration;
+  }
+
+  function setBorrowFee(address asset, uint256 borrowFee) external virtual onlyPoolAdmin {
+    _borrowFees[asset] = borrowFee;
   }
 
   /// @inheritdoc IPool
