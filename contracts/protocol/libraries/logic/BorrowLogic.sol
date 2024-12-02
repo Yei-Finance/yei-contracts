@@ -150,7 +150,10 @@ library BorrowLogic {
     );
 
     if (params.releaseUnderlying) {
-      IAToken(reserveCache.aTokenAddress).transferUnderlyingTo(params.user, params.amount);
+      uint256 borrowFeeAmount = (params.amount * params.borrowFeeBasisPoints) / 10000;
+      uint256 amountAfterFee = params.amount - borrowFeeAmount;
+      IAToken(reserveCache.aTokenAddress).transferUnderlyingTo(params.user, amountAfterFee);
+      IAToken(reserveCache.aTokenAddress).transferUnderlyingTo(params.poolAdmin, borrowFeeAmount);
     }
 
     emit Borrow(
