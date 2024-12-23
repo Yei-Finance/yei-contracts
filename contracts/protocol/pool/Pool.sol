@@ -39,7 +39,7 @@ import {PoolStorage} from './PoolStorage.sol';
 contract Pool is VersionedInitializable, PoolStorage, IPool {
   using ReserveLogic for DataTypes.ReserveData;
 
-  uint256 public constant POOL_REVISION = 0x1;
+  uint256 public constant POOL_REVISION = 0x5;
   IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
 
   /**
@@ -159,6 +159,25 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     );
   }
 
+  function supplyUnbacked(
+    address asset,
+    uint256 amount,
+    address onBehalfOf,
+    uint16 referralCode
+  ) public virtual onlyBridge {
+    SupplyLogic.executeSupplyUnbacked(
+      _reserves,
+      _reservesList,
+      _usersConfig[onBehalfOf],
+      DataTypes.ExecuteSupplyParams({
+        asset: asset,
+        amount: amount,
+        onBehalfOf: onBehalfOf,
+        referralCode: referralCode
+      })
+    );
+  }
+
   /// @inheritdoc IPool
   function supplyWithPermit(
     address asset,
@@ -179,6 +198,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
       permitR,
       permitS
     );
+
     SupplyLogic.executeSupply(
       _reserves,
       _reservesList,
@@ -215,6 +235,28 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
       );
   }
 
+  function withdrawUnbacked(
+    address asset,
+    uint256 amount,
+    address user
+  ) public virtual onlyBridge returns (uint256) {
+    return
+      SupplyLogic.executeWithdrawUnbacked(
+        _reserves,
+        _reservesList,
+        _eModeCategories,
+        _usersConfig[user],
+        DataTypes.ExecuteWithdrawParams({
+          asset: asset,
+          amount: amount,
+          to: user,
+          reservesCount: _reservesCount,
+          oracle: ADDRESSES_PROVIDER.getPriceOracle(),
+          userEModeCategory: _usersEModeCategory[user]
+        })
+      );
+  }
+
   /// @inheritdoc IPool
   function borrow(
     address asset,
@@ -245,6 +287,35 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     );
   }
 
+  function borrowUnbacked(
+    address asset,
+    uint256 amount,
+    uint256 interestRateMode,
+    uint16 referralCode,
+    address onBehalfOf
+  ) public virtual onlyBridge {
+    BorrowLogic.executeBorrow(
+      _reserves,
+      _reservesList,
+      _eModeCategories,
+      _usersConfig[onBehalfOf],
+      DataTypes.ExecuteBorrowParams({
+        asset: asset,
+        user: onBehalfOf,
+        onBehalfOf: onBehalfOf,
+        amount: amount,
+        interestRateMode: DataTypes.InterestRateMode(interestRateMode),
+        referralCode: referralCode,
+        releaseUnderlying: false,
+        maxStableRateBorrowSizePercent: _maxStableRateBorrowSizePercent,
+        reservesCount: _reservesCount,
+        oracle: ADDRESSES_PROVIDER.getPriceOracle(),
+        userEModeCategory: _usersEModeCategory[onBehalfOf],
+        priceOracleSentinel: ADDRESSES_PROVIDER.getPriceOracleSentinel()
+      })
+    );
+  }
+
   /// @inheritdoc IPool
   function repay(
     address asset,
@@ -254,6 +325,27 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
   ) public virtual override returns (uint256) {
     return
       BorrowLogic.executeRepay(
+        _reserves,
+        _reservesList,
+        _usersConfig[onBehalfOf],
+        DataTypes.ExecuteRepayParams({
+          asset: asset,
+          amount: amount,
+          interestRateMode: DataTypes.InterestRateMode(interestRateMode),
+          onBehalfOf: onBehalfOf,
+          useATokens: false
+        })
+      );
+  }
+
+  function repayUnbacked(
+    address asset,
+    uint256 amount,
+    uint256 interestRateMode,
+    address onBehalfOf
+  ) public virtual onlyBridge returns (uint256) {
+    return
+      BorrowLogic.executeRepayUnbacked(
         _reserves,
         _reservesList,
         _usersConfig[onBehalfOf],

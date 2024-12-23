@@ -52,7 +52,30 @@ const hardhatConfig = {
     username: process.env.TENDERLY_USERNAME || '',
     forkNetwork: '1', //Network id of the network we want to fork
   },
+  etherscan: {
+    apiKey: '97fcfb33-caa5-40b1-b6a9-a177f61851fe',
+    customChains: [
+      {
+        network: 'seiMainnet',
+        chainId: 1329,
+        urls: {
+          apiURL: 'https://seitrace.com/pacific-1/api',
+          browserURL: 'https://seitrace.com/pacific-1',
+        },
+      },
+    ],
+  },
   networks: {
+    seiTestnet: {
+      url: 'https://evm-rpc-testnet.sei-apis.com',
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 1328,
+    },
+    seiMainnet: {
+      url: 'https://evm-rpc.sei-apis.com/',
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 1329,
+    },
     coverage: {
       url: 'http://localhost:8555',
       chainId: COVERAGE_CHAINID,
@@ -86,6 +109,10 @@ const hardhatConfig = {
   },
   namedAccounts: {
     ...DEFAULT_NAMED_ACCOUNTS,
+    Pool: {
+      seiTestnet: '0x0194A8AA8c66388830F4aE9F161FEC680AB4B4B2',
+      seiMainnet: '0x4a4d9abD36F923cBA0Af62A39C01dEC2944fb638',
+    },
   },
   external: {
     contracts: [

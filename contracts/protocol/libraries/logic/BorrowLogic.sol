@@ -265,6 +265,104 @@ library BorrowLogic {
   }
 
   /**
+   * @notice Implements the repay without underlying feature. This Repaying does not transfer the underlying back to the aToken and clears the
+   * equivalent amount of debt for the user by burning the corresponding debt token. For isolated positions, it also
+   * reduces the isolated debt.
+   * @dev  Emits the `Repay()` event
+   * @param reservesData The state of all the reserves
+   * @param reservesList The addresses of all the active reserves
+   * @param userConfig The user configuration mapping that tracks the supplied/borrowed assets
+   * @param params The additional parameters needed to execute the repay function
+   * @return The actual amount being repaid
+   */
+  function executeRepayUnbacked(
+    mapping(address => DataTypes.ReserveData) storage reservesData,
+    mapping(uint256 => address) storage reservesList,
+    DataTypes.UserConfigurationMap storage userConfig,
+    DataTypes.ExecuteRepayParams memory params
+  ) external returns (uint256) {
+    DataTypes.ReserveData storage reserve = reservesData[params.asset];
+    DataTypes.ReserveCache memory reserveCache = reserve.cache();
+    reserve.updateState(reserveCache);
+
+    (uint256 stableDebt, uint256 variableDebt) = Helpers.getUserCurrentDebt(
+      params.onBehalfOf,
+      reserveCache
+    );
+
+    ValidationLogic.validateRepay(
+      reserveCache,
+      params.amount,
+      params.interestRateMode,
+      params.onBehalfOf,
+      stableDebt,
+      variableDebt
+    );
+
+    uint256 paybackAmount = params.interestRateMode == DataTypes.InterestRateMode.STABLE
+      ? stableDebt
+      : variableDebt;
+
+    // Allows a user to repay with aTokens without leaving dust from interest.
+    if (params.useATokens && params.amount == type(uint256).max) {
+      params.amount = IAToken(reserveCache.aTokenAddress).balanceOf(msg.sender);
+    }
+
+    if (params.amount < paybackAmount) {
+      paybackAmount = params.amount;
+    }
+
+    if (params.interestRateMode == DataTypes.InterestRateMode.STABLE) {
+      (reserveCache.nextTotalStableDebt, reserveCache.nextAvgStableBorrowRate) = IStableDebtToken(
+        reserveCache.stableDebtTokenAddress
+      ).burn(params.onBehalfOf, paybackAmount);
+    } else {
+      reserveCache.nextScaledVariableDebt = IVariableDebtToken(
+        reserveCache.variableDebtTokenAddress
+      ).burn(params.onBehalfOf, paybackAmount, reserveCache.nextVariableBorrowIndex);
+    }
+
+    reserve.updateInterestRates(
+      reserveCache,
+      params.asset,
+      params.useATokens ? 0 : paybackAmount,
+      0
+    );
+
+    if (stableDebt + variableDebt - paybackAmount == 0) {
+      userConfig.setBorrowing(reserve.id, false);
+    }
+
+    IsolationModeLogic.updateIsolatedDebtIfIsolated(
+      reservesData,
+      reservesList,
+      userConfig,
+      reserveCache,
+      paybackAmount
+    );
+
+    if (params.useATokens) {
+      IAToken(reserveCache.aTokenAddress).burn(
+        msg.sender,
+        reserveCache.aTokenAddress,
+        paybackAmount,
+        reserveCache.nextLiquidityIndex
+      );
+    } else {
+      // IERC20(params.asset).safeTransferFrom(msg.sender, reserveCache.aTokenAddress, paybackAmount);
+      IAToken(reserveCache.aTokenAddress).handleRepayment(
+        msg.sender,
+        params.onBehalfOf,
+        paybackAmount
+      );
+    }
+
+    emit Repay(params.asset, params.onBehalfOf, msg.sender, paybackAmount, params.useATokens);
+
+    return paybackAmount;
+  }
+
+  /**
    * @notice Implements the rebalance stable borrow rate feature. In case of liquidity crunches on the protocol, stable
    * rate borrows might need to be rebalanced to bring back equilibrium between the borrow and supply APYs.
    * @dev The rules that define if a position can be rebalanced are implemented in `ValidationLogic.validateRebalanceStableBorrowRate()`

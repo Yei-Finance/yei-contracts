@@ -294,4 +294,125 @@ library SupplyLogic {
       emit ReserveUsedAsCollateralDisabled(asset, msg.sender);
     }
   }
+
+  /**
+   * @notice Implements the supply without underlying feature. Through `supplyUnbacked()`, users supply assets to the Aave protocol.
+   * @dev Emits the `Supply()` event.
+   * @dev In the first supply action, `ReserveUsedAsCollateralEnabled()` is emitted, if the asset can be enabled as
+   * collateral.
+   * @param reservesData The state of all the reserves
+   * @param reservesList The addresses of all the active reserves
+   * @param userConfig The user configuration mapping that tracks the supplied/borrowed assets
+   * @param params The additional parameters needed to execute the supply function
+   */
+  function executeSupplyUnbacked(
+    mapping(address => DataTypes.ReserveData) storage reservesData,
+    mapping(uint256 => address) storage reservesList,
+    DataTypes.UserConfigurationMap storage userConfig,
+    DataTypes.ExecuteSupplyParams memory params
+  ) external {
+    DataTypes.ReserveData storage reserve = reservesData[params.asset];
+    DataTypes.ReserveCache memory reserveCache = reserve.cache();
+
+    reserve.updateState(reserveCache);
+
+    ValidationLogic.validateSupply(reserveCache, reserve, params.amount);
+
+    reserve.updateInterestRates(reserveCache, params.asset, params.amount, 0);
+
+    bool isFirstSupply = IAToken(reserveCache.aTokenAddress).mint(
+      msg.sender,
+      params.onBehalfOf,
+      params.amount,
+      reserveCache.nextLiquidityIndex
+    );
+
+    if (isFirstSupply) {
+      if (
+        ValidationLogic.validateAutomaticUseAsCollateral(
+          reservesData,
+          reservesList,
+          userConfig,
+          reserveCache.reserveConfiguration,
+          reserveCache.aTokenAddress
+        )
+      ) {
+        userConfig.setUsingAsCollateral(reserve.id, true);
+        emit ReserveUsedAsCollateralEnabled(params.asset, params.onBehalfOf);
+      }
+    }
+
+    emit Supply(params.asset, msg.sender, params.onBehalfOf, params.amount, params.referralCode);
+  }
+
+  /**
+   * @notice Implements the withdraw without underlying feature. Through `withdrawUnbacked()`, users redeem their aTokens without receiving the underlying asset
+   * previously supplied in the Aave protocol.
+   * @dev Emits the `Withdraw()` event.
+   * @dev If the user withdraws everything, `ReserveUsedAsCollateralDisabled()` is emitted.
+   * @param reservesData The state of all the reserves
+   * @param reservesList The addresses of all the active reserves
+   * @param eModeCategories The configuration of all the efficiency mode categories
+   * @param userConfig The user configuration mapping that tracks the supplied/borrowed assets
+   * @param params The additional parameters needed to execute the withdraw function
+   * @return The actual amount withdrawn
+   */
+  function executeWithdrawUnbacked(
+    mapping(address => DataTypes.ReserveData) storage reservesData,
+    mapping(uint256 => address) storage reservesList,
+    mapping(uint8 => DataTypes.EModeCategory) storage eModeCategories,
+    DataTypes.UserConfigurationMap storage userConfig,
+    DataTypes.ExecuteWithdrawParams memory params
+  ) external returns (uint256) {
+    DataTypes.ReserveData storage reserve = reservesData[params.asset];
+    DataTypes.ReserveCache memory reserveCache = reserve.cache();
+
+    reserve.updateState(reserveCache);
+
+    uint256 userBalance = IAToken(reserveCache.aTokenAddress).scaledBalanceOf(params.to).rayMul(
+      reserveCache.nextLiquidityIndex
+    );
+
+    uint256 amountToWithdraw = params.amount;
+
+    if (params.amount == type(uint256).max) {
+      amountToWithdraw = userBalance;
+    }
+
+    ValidationLogic.validateWithdraw(reserveCache, amountToWithdraw, userBalance);
+
+    reserve.updateInterestRates(reserveCache, params.asset, 0, amountToWithdraw);
+
+    bool isCollateral = userConfig.isUsingAsCollateral(reserve.id);
+
+    if (isCollateral && amountToWithdraw == userBalance) {
+      userConfig.setUsingAsCollateral(reserve.id, false);
+      emit ReserveUsedAsCollateralDisabled(params.asset, params.to);
+    }
+
+    IAToken(reserveCache.aTokenAddress).burn(
+      params.to,
+      reserveCache.aTokenAddress,
+      amountToWithdraw,
+      reserveCache.nextLiquidityIndex
+    );
+
+    if (isCollateral && userConfig.isBorrowingAny()) {
+      ValidationLogic.validateHFAndLtv(
+        reservesData,
+        reservesList,
+        eModeCategories,
+        userConfig,
+        params.asset,
+        params.to,
+        params.reservesCount,
+        params.oracle,
+        params.userEModeCategory
+      );
+    }
+
+    emit Withdraw(params.asset, params.to, params.to, amountToWithdraw);
+
+    return amountToWithdraw;
+  }
 }
