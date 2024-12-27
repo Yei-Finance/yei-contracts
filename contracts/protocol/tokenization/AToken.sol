@@ -251,7 +251,6 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
 
   /// @inheritdoc IAToken
   function rescueTokens(address token, address to, uint256 amount) external override onlyPoolAdmin {
-    require(token != _underlyingAsset, Errors.UNDERLYING_CANNOT_BE_RESCUED);
     IERC20(token).safeTransfer(to, amount);
   }
 }

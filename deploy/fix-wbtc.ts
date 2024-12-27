@@ -32,6 +32,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       GPv2SafeERC20: (await get('GPv2SafeERC20')).address,
     },
   });
+  // verify
+  await hre.run('verify:verify', {
+    address: newAToken.address,
+    constructorArguments: [pool],
+    contract: 'contracts/protocol/tokenization/AToken.sol:AToken',
+  });
   let newVariableDebtToken = await deploy(`VariableDebtToken`, {
     from: deployer,
     log: true,
@@ -42,6 +48,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       SafeCast: (await get('SafeCast')).address,
       GPv2SafeERC20: (await get('GPv2SafeERC20')).address,
     },
+  });
+  await hre.run('verify:verify', {
+    address: newVariableDebtToken.address,
+    constructorArguments: [pool],
   });
 };
 export default func;
