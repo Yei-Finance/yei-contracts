@@ -33,6 +33,8 @@ library DataTypes {
     uint128 unbacked;
     //the outstanding debt borrowed against this asset in isolation mode
     uint128 isolationModeTotalDebt;
+    // the current liquidity of the reserve
+    uint256 currentLiquidity;
   }
 
   struct ReserveConfigurationMap {
