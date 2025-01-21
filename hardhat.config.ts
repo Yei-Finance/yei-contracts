@@ -68,12 +68,12 @@ const hardhatConfig = {
   networks: {
     seiTestnet: {
       url: 'https://evm-rpc-testnet.sei-apis.com',
-      accounts: [process.env.PRIVATE_KEY],
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 1328,
     },
     seiMainnet: {
       url: 'https://evm-rpc.sei-apis.com/',
-      accounts: [process.env.PRIVATE_KEY],
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 1329,
     },
     coverage: {
