@@ -244,6 +244,7 @@ library DataTypes {
   }
 
   struct CalculateInterestRatesParams {
+    uint256 currentLiquidity;
     uint256 unbacked;
     uint256 liquidityAdded;
     uint256 liquidityTaken;

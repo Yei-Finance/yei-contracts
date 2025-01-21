@@ -63,6 +63,7 @@ library SupplyLogic {
     ValidationLogic.validateSupply(reserveCache, reserve, params.amount);
 
     reserve.updateInterestRates(reserveCache, params.asset, params.amount, 0);
+    reserve.updateCurrentLiquidity(params.amount, 0);
 
     IERC20(params.asset).safeTransferFrom(msg.sender, reserveCache.aTokenAddress, params.amount);
 
@@ -128,6 +129,7 @@ library SupplyLogic {
     ValidationLogic.validateWithdraw(reserveCache, amountToWithdraw, userBalance);
 
     reserve.updateInterestRates(reserveCache, params.asset, 0, amountToWithdraw);
+    reserve.updateCurrentLiquidity(0, amountToWithdraw);
 
     bool isCollateral = userConfig.isUsingAsCollateral(reserve.id);
 
@@ -319,7 +321,7 @@ library SupplyLogic {
     ValidationLogic.validateSupply(reserveCache, reserve, params.amount);
 
     reserve.updateInterestRates(reserveCache, params.asset, params.amount, 0);
-
+    reserve.updateCurrentLiquidity(params.amount, 0);
     bool isFirstSupply = IAToken(reserveCache.aTokenAddress).mint(
       msg.sender,
       params.onBehalfOf,
@@ -382,7 +384,7 @@ library SupplyLogic {
     ValidationLogic.validateWithdraw(reserveCache, amountToWithdraw, userBalance);
 
     reserve.updateInterestRates(reserveCache, params.asset, 0, amountToWithdraw);
-
+    reserve.updateCurrentLiquidity(0, amountToWithdraw);
     bool isCollateral = userConfig.isUsingAsCollateral(reserve.id);
 
     if (isCollateral && amountToWithdraw == userBalance) {

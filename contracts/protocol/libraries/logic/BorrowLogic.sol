@@ -148,6 +148,7 @@ library BorrowLogic {
       0,
       params.releaseUnderlying ? params.amount : 0
     );
+    reserve.updateCurrentLiquidity(0, params.amount); // subtract the amount from the liquidity
 
     if (params.releaseUnderlying) {
       IAToken(reserveCache.aTokenAddress).transferUnderlyingTo(params.user, params.amount);
@@ -230,6 +231,7 @@ library BorrowLogic {
       params.useATokens ? 0 : paybackAmount,
       0
     );
+    reserve.updateCurrentLiquidity(0, paybackAmount); // add the amount to the liquidity
 
     if (stableDebt + variableDebt - paybackAmount == 0) {
       userConfig.setBorrowing(reserve.id, false);
@@ -328,6 +330,7 @@ library BorrowLogic {
       params.useATokens ? 0 : paybackAmount,
       0
     );
+    reserve.updateCurrentLiquidity(paybackAmount, 0); // add the amount to the liquidity
 
     if (stableDebt + variableDebt - paybackAmount == 0) {
       userConfig.setBorrowing(reserve.id, false);

@@ -416,6 +416,7 @@ library ValidationLogic {
       reserve.interestRateStrategyAddress
     ).calculateInterestRates(
         DataTypes.CalculateInterestRatesParams({
+          currentLiquidity: reserve.currentLiquidity,
           unbacked: reserve.unbacked,
           liquidityAdded: 0,
           liquidityTaken: 0,

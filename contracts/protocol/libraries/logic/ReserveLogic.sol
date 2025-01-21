@@ -85,6 +85,18 @@ library ReserveLogic {
     }
   }
 
+  function updateCurrentLiquidity(
+    DataTypes.ReserveData storage reserve,
+    uint256 additionAmount,
+    uint256 subtractionAmount
+  ) internal {
+    require(
+      reserve.currentLiquidity + additionAmount >= subtractionAmount,
+      'ReserveLogic: currentLiquidity cannot be negative'
+    );
+    reserve.currentLiquidity = reserve.currentLiquidity + additionAmount - subtractionAmount;
+  }
+
   /**
    * @notice Updates the liquidity cumulative index and the variable borrow index.
    * @param reserve The reserve object
@@ -188,6 +200,7 @@ library ReserveLogic {
       vars.nextVariableRate
     ) = IReserveInterestRateStrategy(reserve.interestRateStrategyAddress).calculateInterestRates(
       DataTypes.CalculateInterestRatesParams({
+        currentLiquidity: reserve.currentLiquidity,
         unbacked: reserve.unbacked,
         liquidityAdded: liquidityAdded,
         liquidityTaken: liquidityTaken,
