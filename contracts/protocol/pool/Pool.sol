@@ -37,38 +37,41 @@ import {PoolStorage} from './PoolStorage.sol';
  *   PoolAddressesProvider
  */
 contract Pool is VersionedInitializable, PoolStorage, IPool {
+  event ContractWhitelisted(address contractAddress, bool whitelisted);
   using ReserveLogic for DataTypes.ReserveData;
 
   uint256 public constant POOL_REVISION = 0x2;
   IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
 
-  struct whitelistContractStruct {
-    mapping(address => bool) whitelistContracts;
-  }
   // keccak256(abi.encode(uint256(keccak256("storage.whitelistContracts")) - 1)) & ~bytes32(uint256(0xff));
   bytes32 public constant WHITELIST_CONTRACTS_STORAGE_SLOT =
     0xa1c0e332e19276bf3cb2d057c005b8ce52d992cf7fa41630d0c502a59614f000;
 
-  function getWhitelistContractStruct() internal pure returns (whitelistContractStruct storage l) {
+  function getWhitelistContracts()
+    internal
+    pure
+    returns (mapping(address => bool) storage whitelistContracts)
+  {
     assembly {
-      l.slot := WHITELIST_CONTRACTS_STORAGE_SLOT
+      whitelistContracts.slot := WHITELIST_CONTRACTS_STORAGE_SLOT
     }
+  }
+
+  function isContractWhitelisted(address contractAddress) public view returns (bool) {
+    return getWhitelistContracts()[contractAddress];
   }
 
   function setWhitelistContract(
     address contractAddress,
     bool whitelistState
   ) external onlyPoolAdmin {
-    getWhitelistContractStruct().whitelistContracts[contractAddress] = whitelistState;
-  }
-
-  function getWhitelistContract(address contractAddress) public view returns (bool) {
-    return getWhitelistContractStruct().whitelistContracts[contractAddress];
+    getWhitelistContracts()[contractAddress] = whitelistState;
+    emit ContractWhitelisted(contractAddress, whitelistState);
   }
 
   modifier onlyEOAOrWhitelistedContract() {
     require(
-      msg.sender == tx.origin || getWhitelistContract(msg.sender),
+      msg.sender == tx.origin || getWhitelistContracts()[msg.sender],
       'Only EOA or whitelisted contract allowed'
     );
     _;
