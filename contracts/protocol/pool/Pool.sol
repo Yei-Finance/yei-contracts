@@ -39,8 +39,40 @@ import {PoolStorage} from './PoolStorage.sol';
 contract Pool is VersionedInitializable, PoolStorage, IPool {
   using ReserveLogic for DataTypes.ReserveData;
 
-  uint256 public constant POOL_REVISION = 0x1;
+  uint256 public constant POOL_REVISION = 0x2;
   IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
+
+  struct whitelistContractStruct {
+    mapping(address => bool) whitelistContracts;
+  }
+  // keccak256(abi.encode(uint256(keccak256("storage.whitelistContracts")) - 1)) & ~bytes32(uint256(0xff));
+  bytes32 public constant WHITELIST_CONTRACTS_STORAGE_SLOT =
+    0xa1c0e332e19276bf3cb2d057c005b8ce52d992cf7fa41630d0c502a59614f000;
+
+  function getWhitelistContractStruct() internal pure returns (whitelistContractStruct storage l) {
+    assembly {
+      l.slot := WHITELIST_CONTRACTS_STORAGE_SLOT
+    }
+  }
+
+  function setWhitelistContract(
+    address contractAddress,
+    bool whitelistState
+  ) external onlyPoolAdmin {
+    getWhitelistContractStruct().whitelistContracts[contractAddress] = whitelistState;
+  }
+
+  function getWhitelistContract(address contractAddress) public view returns (bool) {
+    return getWhitelistContractStruct().whitelistContracts[contractAddress];
+  }
+
+  modifier onlyEOAOrWhitelistedContract() {
+    require(
+      msg.sender == tx.origin || getWhitelistContract(msg.sender),
+      'Only EOA or whitelisted contract allowed'
+    );
+    _;
+  }
 
   /**
    * @dev Only pool configurator can call functions marked by this modifier.
@@ -145,7 +177,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint256 amount,
     address onBehalfOf,
     uint16 referralCode
-  ) public virtual override {
+  ) public virtual override onlyEOAOrWhitelistedContract {
     SupplyLogic.executeSupply(
       _reserves,
       _reservesList,
@@ -169,7 +201,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint8 permitV,
     bytes32 permitR,
     bytes32 permitS
-  ) public virtual override {
+  ) public virtual override onlyEOAOrWhitelistedContract {
     IERC20WithPermit(asset).permit(
       msg.sender,
       address(this),
@@ -197,7 +229,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     address asset,
     uint256 amount,
     address to
-  ) public virtual override returns (uint256) {
+  ) public virtual override onlyEOAOrWhitelistedContract returns (uint256) {
     return
       SupplyLogic.executeWithdraw(
         _reserves,
@@ -222,7 +254,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint256 interestRateMode,
     uint16 referralCode,
     address onBehalfOf
-  ) public virtual override {
+  ) public virtual override onlyEOAOrWhitelistedContract {
     BorrowLogic.executeBorrow(
       _reserves,
       _reservesList,
@@ -251,7 +283,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint256 amount,
     uint256 interestRateMode,
     address onBehalfOf
-  ) public virtual override returns (uint256) {
+  ) public virtual override onlyEOAOrWhitelistedContract returns (uint256) {
     return
       BorrowLogic.executeRepay(
         _reserves,
@@ -277,7 +309,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint8 permitV,
     bytes32 permitR,
     bytes32 permitS
-  ) public virtual override returns (uint256) {
+  ) public virtual override onlyEOAOrWhitelistedContract returns (uint256) {
     {
       IERC20WithPermit(asset).permit(
         msg.sender,
@@ -306,7 +338,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     address asset,
     uint256 amount,
     uint256 interestRateMode
-  ) public virtual override returns (uint256) {
+  ) public virtual override onlyEOAOrWhitelistedContract returns (uint256) {
     return
       BorrowLogic.executeRepay(
         _reserves,
@@ -362,7 +394,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     address user,
     uint256 debtToCover,
     bool receiveAToken
-  ) public virtual override {
+  ) public virtual override onlyEOAOrWhitelistedContract {
     LiquidationLogic.executeLiquidationCall(
       _reserves,
       _reservesList,
@@ -427,7 +459,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint256 amount,
     bytes calldata params,
     uint16 referralCode
-  ) public virtual override {
+  ) public virtual override onlyEOAOrWhitelistedContract {
     DataTypes.FlashloanSimpleParams memory flashParams = DataTypes.FlashloanSimpleParams({
       receiverAddress: receiverAddress,
       asset: asset,
@@ -721,7 +753,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint256 amount,
     address onBehalfOf,
     uint16 referralCode
-  ) external virtual override {
+  ) external virtual override onlyEOAOrWhitelistedContract {
     SupplyLogic.executeSupply(
       _reserves,
       _reservesList,
