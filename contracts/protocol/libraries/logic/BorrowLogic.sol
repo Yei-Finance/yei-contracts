@@ -57,6 +57,17 @@ library BorrowLogic {
   );
   event IsolationModeTotalDebtUpdated(address indexed asset, uint256 totalDebt);
 
+  struct BorrowLocalVars {
+    bool isolationModeActive;
+    address isolationModeCollateralAddress;
+    uint256 isolationModeDebtCeiling;
+    uint256 totalPremium;
+    uint256 amountPlusPremium;
+    uint256 currentStableRate;
+    bool isFirstBorrowing;
+    uint256 nextIsolationModeTotalDebt;
+  }
+
   /**
    * @notice Implements the borrow feature. Borrowing allows users that provided collateral to draw liquidity from the
    * Aave protocol proportionally to their collateralization power. For isolated positions, it also increases the
@@ -79,15 +90,16 @@ library BorrowLogic {
     DataTypes.ReserveCache memory reserveCache = reserve.cache();
 
     reserve.updateState(reserveCache);
+    BorrowLocalVars memory vars;
 
     (
-      bool isolationModeActive,
-      address isolationModeCollateralAddress,
-      uint256 isolationModeDebtCeiling
+      vars.isolationModeActive,
+      vars.isolationModeCollateralAddress,
+      vars.isolationModeDebtCeiling
     ) = userConfig.getIsolationModeState(reservesData, reservesList);
 
-    uint256 totalPremium = params.amount.percentMul(params.borrowPremium);
-    uint256 amountPlusPremium = params.amount + totalPremium;
+    vars.totalPremium = params.amount.percentMul(params.borrowPremium);
+    vars.amountPlusPremium = params.amount + vars.totalPremium;
 
     ValidationLogic.validateBorrow(
       reservesData,
@@ -98,59 +110,59 @@ library BorrowLogic {
         userConfig: userConfig,
         asset: params.asset,
         userAddress: params.onBehalfOf,
-        amount: amountPlusPremium,
+        amount: vars.amountPlusPremium,
         interestRateMode: params.interestRateMode,
         maxStableLoanPercent: params.maxStableRateBorrowSizePercent,
         reservesCount: params.reservesCount,
         oracle: params.oracle,
         userEModeCategory: params.userEModeCategory,
         priceOracleSentinel: params.priceOracleSentinel,
-        isolationModeActive: isolationModeActive,
-        isolationModeCollateralAddress: isolationModeCollateralAddress,
-        isolationModeDebtCeiling: isolationModeDebtCeiling
+        isolationModeActive: vars.isolationModeActive,
+        isolationModeCollateralAddress: vars.isolationModeCollateralAddress,
+        isolationModeDebtCeiling: vars.isolationModeDebtCeiling
       })
     );
 
-    uint256 currentStableRate = 0;
-    bool isFirstBorrowing = false;
+    vars.currentStableRate = 0;
+    vars.isFirstBorrowing = false;
 
     if (params.interestRateMode == DataTypes.InterestRateMode.STABLE) {
-      currentStableRate = reserve.currentStableBorrowRate;
+      vars.currentStableRate = reserve.currentStableBorrowRate;
 
       (
-        isFirstBorrowing,
+        vars.isFirstBorrowing,
         reserveCache.nextTotalStableDebt,
         reserveCache.nextAvgStableBorrowRate
       ) = IStableDebtToken(reserveCache.stableDebtTokenAddress).mint(
         params.user,
         params.onBehalfOf,
-        amountPlusPremium,
-        currentStableRate
+        vars.amountPlusPremium,
+        vars.currentStableRate
       );
     } else {
-      (isFirstBorrowing, reserveCache.nextScaledVariableDebt) = IVariableDebtToken(
+      (vars.isFirstBorrowing, reserveCache.nextScaledVariableDebt) = IVariableDebtToken(
         reserveCache.variableDebtTokenAddress
       ).mint(
           params.user,
           params.onBehalfOf,
-          amountPlusPremium,
+          vars.amountPlusPremium,
           reserveCache.nextVariableBorrowIndex
         );
     }
 
-    if (isFirstBorrowing) {
+    if (vars.isFirstBorrowing) {
       userConfig.setBorrowing(reserve.id, true);
     }
 
-    if (isolationModeActive) {
-      uint256 nextIsolationModeTotalDebt = reservesData[isolationModeCollateralAddress]
-        .isolationModeTotalDebt += (amountPlusPremium /
+    if (vars.isolationModeActive) {
+      vars.nextIsolationModeTotalDebt = reservesData[vars.isolationModeCollateralAddress]
+        .isolationModeTotalDebt += (vars.amountPlusPremium /
         10 **
           (reserveCache.reserveConfiguration.getDecimals() -
             ReserveConfiguration.DEBT_CEILING_DECIMALS)).toUint128();
       emit IsolationModeTotalDebtUpdated(
-        isolationModeCollateralAddress,
-        nextIsolationModeTotalDebt
+        vars.isolationModeCollateralAddress,
+        vars.nextIsolationModeTotalDebt
       );
     }
 
@@ -178,7 +190,7 @@ library BorrowLogic {
       params.amount,
       params.interestRateMode,
       params.interestRateMode == DataTypes.InterestRateMode.STABLE
-        ? currentStableRate
+        ? vars.currentStableRate
         : reserve.currentVariableBorrowRate,
       params.referralCode
     );
