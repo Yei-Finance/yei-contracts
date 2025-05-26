@@ -240,7 +240,8 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
         reservesCount: _reservesCount,
         oracle: ADDRESSES_PROVIDER.getPriceOracle(),
         userEModeCategory: _usersEModeCategory[onBehalfOf],
-        priceOracleSentinel: ADDRESSES_PROVIDER.getPriceOracleSentinel()
+        priceOracleSentinel: ADDRESSES_PROVIDER.getPriceOracleSentinel(),
+        borrowPremium: _borrowPremium[asset]
       })
     );
   }
@@ -416,6 +417,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
       _reservesList,
       _eModeCategories,
       _usersConfig[onBehalfOf],
+      _borrowPremium,
       flashParams
     );
   }
@@ -733,5 +735,18 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
         referralCode: referralCode
       })
     );
+  }
+
+  /// @inheritdoc IPool
+  function setBorrowPremium(
+    address asset,
+    uint128 borrowPremium
+  ) external virtual override onlyPoolConfigurator {
+    _borrowPremium[asset] = borrowPremium;
+  }
+
+  /// @inheritdoc IPool
+  function getBorrowPremium(address asset) external view virtual override returns (uint256) {
+    return _borrowPremium[asset];
   }
 }

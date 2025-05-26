@@ -10,6 +10,8 @@ import {IAToken} from '../../../interfaces/IAToken.sol';
 import {UserConfiguration} from '../configuration/UserConfiguration.sol';
 import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
 import {Helpers} from '../helpers/Helpers.sol';
+import {WadRayMath} from '../math/WadRayMath.sol';
+import {PercentageMath} from '../math/PercentageMath.sol';
 import {DataTypes} from '../types/DataTypes.sol';
 import {ValidationLogic} from './ValidationLogic.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
@@ -26,6 +28,8 @@ library BorrowLogic {
   using GPv2SafeERC20 for IERC20;
   using UserConfiguration for DataTypes.UserConfigurationMap;
   using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+  using WadRayMath for uint256;
+  using PercentageMath for uint256;
   using SafeCast for uint256;
 
   // See `IPool` for descriptions
@@ -82,6 +86,9 @@ library BorrowLogic {
       uint256 isolationModeDebtCeiling
     ) = userConfig.getIsolationModeState(reservesData, reservesList);
 
+    uint256 totalPremium = params.amount.percentMul(params.borrowPremium);
+    uint256 amountPlusPremium = params.amount + totalPremium;
+
     ValidationLogic.validateBorrow(
       reservesData,
       reservesList,
@@ -91,7 +98,7 @@ library BorrowLogic {
         userConfig: userConfig,
         asset: params.asset,
         userAddress: params.onBehalfOf,
-        amount: params.amount,
+        amount: amountPlusPremium,
         interestRateMode: params.interestRateMode,
         maxStableLoanPercent: params.maxStableRateBorrowSizePercent,
         reservesCount: params.reservesCount,
@@ -117,13 +124,18 @@ library BorrowLogic {
       ) = IStableDebtToken(reserveCache.stableDebtTokenAddress).mint(
         params.user,
         params.onBehalfOf,
-        params.amount,
+        amountPlusPremium,
         currentStableRate
       );
     } else {
       (isFirstBorrowing, reserveCache.nextScaledVariableDebt) = IVariableDebtToken(
         reserveCache.variableDebtTokenAddress
-      ).mint(params.user, params.onBehalfOf, params.amount, reserveCache.nextVariableBorrowIndex);
+      ).mint(
+          params.user,
+          params.onBehalfOf,
+          amountPlusPremium,
+          reserveCache.nextVariableBorrowIndex
+        );
     }
 
     if (isFirstBorrowing) {
@@ -132,7 +144,7 @@ library BorrowLogic {
 
     if (isolationModeActive) {
       uint256 nextIsolationModeTotalDebt = reservesData[isolationModeCollateralAddress]
-        .isolationModeTotalDebt += (params.amount /
+        .isolationModeTotalDebt += (amountPlusPremium /
         10 **
           (reserveCache.reserveConfiguration.getDecimals() -
             ReserveConfiguration.DEBT_CEILING_DECIMALS)).toUint128();
@@ -142,6 +154,12 @@ library BorrowLogic {
       );
     }
 
+    // borrows amountPlusPremium and only sends amount to user
+    // equivalent to sending out amountPlusPremium, user sends back totalPremium as fee
+    reserve.accruedToTreasury += vars
+      .totalPremium
+      .rayDiv(reserveCache.nextLiquidityIndex)
+      .toUint128();
     reserve.updateInterestRates(
       reserveCache,
       params.asset,

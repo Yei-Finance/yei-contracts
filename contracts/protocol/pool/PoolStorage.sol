@@ -48,4 +48,7 @@ contract PoolStorage {
 
   // Maximum number of active reserves there have been in the protocol. It is the upper bound of the reserves list
   uint16 internal _reservesCount;
+
+  // Map of reserves and their borrow premium paid to protocol, expressed in bps (reserveAddress => borrowPremium)
+  mapping(address => uint128) internal _borrowPremium;
 }
