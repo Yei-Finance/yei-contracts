@@ -58,7 +58,7 @@ interface IPoolConfigurator {
    * @param asset The address of the underlying asset of the reserve
    * @param enabled True if stable rate borrowing is enabled, false otherwise
    */
-  event ReserveStableRateBorrowing(address indexed asset, bool enabled);
+  // event ReserveStableRateBorrowing(address indexed asset, bool enabled);
 
   /**
    * @dev Emitted when a reserve is activated or deactivated
@@ -325,7 +325,7 @@ interface IPoolConfigurator {
    * @param asset The address of the underlying asset of the reserve
    * @param enabled True if stable rate borrowing needs to be enabled, false otherwise
    */
-  function setReserveStableRateBorrowing(address asset, bool enabled) external;
+  // function setReserveStableRateBorrowing(address asset, bool enabled) external;
 
   /**
    * @notice Enable or disable flashloans on a reserve

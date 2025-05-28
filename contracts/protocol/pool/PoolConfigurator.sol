@@ -169,18 +169,18 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
   }
 
   /// @inheritdoc IPoolConfigurator
-  function setReserveStableRateBorrowing(
-    address asset,
-    bool enabled
-  ) external override onlyRiskOrPoolAdmins {
-    DataTypes.ReserveConfigurationMap memory currentConfig = _pool.getConfiguration(asset);
-    if (enabled) {
-      require(currentConfig.getBorrowingEnabled(), Errors.BORROWING_NOT_ENABLED);
-    }
-    currentConfig.setStableRateBorrowingEnabled(enabled);
-    _pool.setConfiguration(asset, currentConfig);
-    emit ReserveStableRateBorrowing(asset, enabled);
-  }
+  // function setReserveStableRateBorrowing(
+  //   address asset,
+  //   bool enabled
+  // ) external override onlyRiskOrPoolAdmins {
+  //   DataTypes.ReserveConfigurationMap memory currentConfig = _pool.getConfiguration(asset);
+  //   if (enabled) {
+  //     require(currentConfig.getBorrowingEnabled(), Errors.BORROWING_NOT_ENABLED);
+  //   }
+  //   currentConfig.setStableRateBorrowingEnabled(enabled);
+  //   _pool.setConfiguration(asset, currentConfig);
+  //   emit ReserveStableRateBorrowing(asset, enabled);
+  // }
 
   /// @inheritdoc IPoolConfigurator
   function setReserveFlashLoaning(
