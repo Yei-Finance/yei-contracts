@@ -72,6 +72,7 @@ library FlashLoanLogic {
     mapping(uint256 => address) storage reservesList,
     mapping(uint8 => DataTypes.EModeCategory) storage eModeCategories,
     DataTypes.UserConfigurationMap storage userConfig,
+    mapping(address => uint128) storage borrowPremium,
     DataTypes.FlashloanParams memory params
   ) external {
     // The usual action flow (cache -> updateState -> validation -> changeState -> updateRates)
@@ -152,7 +153,8 @@ library FlashLoanLogic {
             oracle: IPoolAddressesProvider(params.addressesProvider).getPriceOracle(),
             userEModeCategory: params.userEModeCategory,
             priceOracleSentinel: IPoolAddressesProvider(params.addressesProvider)
-              .getPriceOracleSentinel()
+              .getPriceOracleSentinel(),
+            borrowPremium: borrowPremium[vars.currentAsset]
           })
         );
         // no premium is paid when taking on the flashloan as debt

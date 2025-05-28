@@ -136,6 +136,7 @@ library DataTypes {
     address oracle;
     uint8 userEModeCategory;
     address priceOracleSentinel;
+    uint256 borrowPremium;
   }
 
   struct ExecuteRepayParams {

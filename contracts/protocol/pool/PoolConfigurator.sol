@@ -66,7 +66,7 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
     _;
   }
 
-  uint256 public constant CONFIGURATOR_REVISION = 0x1;
+  uint256 public constant CONFIGURATOR_REVISION = 0x2;
 
   /// @inheritdoc VersionedInitializable
   function getRevision() internal pure virtual override returns (uint256) {
@@ -169,18 +169,18 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
   }
 
   /// @inheritdoc IPoolConfigurator
-  function setReserveStableRateBorrowing(
-    address asset,
-    bool enabled
-  ) external override onlyRiskOrPoolAdmins {
-    DataTypes.ReserveConfigurationMap memory currentConfig = _pool.getConfiguration(asset);
-    if (enabled) {
-      require(currentConfig.getBorrowingEnabled(), Errors.BORROWING_NOT_ENABLED);
-    }
-    currentConfig.setStableRateBorrowingEnabled(enabled);
-    _pool.setConfiguration(asset, currentConfig);
-    emit ReserveStableRateBorrowing(asset, enabled);
-  }
+  // function setReserveStableRateBorrowing(
+  //   address asset,
+  //   bool enabled
+  // ) external override onlyRiskOrPoolAdmins {
+  //   DataTypes.ReserveConfigurationMap memory currentConfig = _pool.getConfiguration(asset);
+  //   if (enabled) {
+  //     require(currentConfig.getBorrowingEnabled(), Errors.BORROWING_NOT_ENABLED);
+  //   }
+  //   currentConfig.setStableRateBorrowingEnabled(enabled);
+  //   _pool.setConfiguration(asset, currentConfig);
+  //   emit ReserveStableRateBorrowing(asset, enabled);
+  // }
 
   /// @inheritdoc IPoolConfigurator
   function setReserveFlashLoaning(
@@ -466,6 +466,17 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
       oldFlashloanPremiumToProtocol,
       newFlashloanPremiumToProtocol
     );
+  }
+
+  /// @inheritdoc IPoolConfigurator
+  function setBorrowPremium(
+    address asset,
+    uint128 newBorrowPremium
+  ) external override onlyPoolAdmin {
+    require(newBorrowPremium <= PercentageMath.PERCENTAGE_FACTOR, Errors.INVALID_BORROW_PREMIUM);
+    uint128 oldBorrowPremium = _pool.getBorrowPremium(asset);
+    _pool.setBorrowPremium(asset, newBorrowPremium);
+    emit BorrowPremiumChanged(asset, oldBorrowPremium, newBorrowPremium);
   }
 
   function _checkNoSuppliers(address asset) internal view {

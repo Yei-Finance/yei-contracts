@@ -734,4 +734,18 @@ interface IPool {
    *   0 if the action is executed directly by the user, without any middle-man
    */
   function deposit(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
+
+  /**
+   * @notice Sets the borrow premium for a given asset
+   * @param asset The address of the underlying asset of the reserve
+   * @param borrowPremium The borrow premium to set
+   */
+  function setBorrowPremium(address asset, uint128 borrowPremium) external;
+
+  /**
+   * @notice Returns the borrow premium for a given asset
+   * @param asset The address of the underlying asset of the reserve
+   * @return The borrow premium for the asset
+   */
+  function getBorrowPremium(address asset) external view returns (uint128);
 }
