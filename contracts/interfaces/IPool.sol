@@ -747,5 +747,5 @@ interface IPool {
    * @param asset The address of the underlying asset of the reserve
    * @return The borrow premium for the asset
    */
-  function getBorrowPremium(address asset) external view returns (uint256);
+  function getBorrowPremium(address asset) external view returns (uint128);
 }

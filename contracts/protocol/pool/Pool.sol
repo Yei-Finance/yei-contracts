@@ -39,7 +39,7 @@ import {PoolStorage} from './PoolStorage.sol';
 contract Pool is VersionedInitializable, PoolStorage, IPool {
   using ReserveLogic for DataTypes.ReserveData;
 
-  uint256 public constant POOL_REVISION = 0x2;
+  uint256 public constant POOL_REVISION = 0x3;
   IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
 
   /**
@@ -746,7 +746,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
   }
 
   /// @inheritdoc IPool
-  function getBorrowPremium(address asset) external view virtual override returns (uint256) {
+  function getBorrowPremium(address asset) external view virtual override returns (uint128) {
     return _borrowPremium[asset];
   }
 }

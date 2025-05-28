@@ -260,6 +260,14 @@ interface IPoolConfigurator {
   event BorrowableInIsolationChanged(address asset, bool borrowable);
 
   /**
+   * @dev Emitted when the borrow premium of a reserve is updated.
+   * @param asset The address of the underlying asset of the reserve
+   * @param oldBorrowPremium The old borrow premium, expressed in bps
+   * @param newBorrowPremium The new borrow premium, expressed in bps
+   */
+  event BorrowPremiumChanged(address asset, uint128 oldBorrowPremium, uint128 newBorrowPremium);
+
+  /**
    * @notice Initializes multiple reserves.
    * @param input The array of initialization parameters
    */
@@ -483,4 +491,11 @@ interface IPoolConfigurator {
    * @param siloed The new siloed borrowing state
    */
   function setSiloedBorrowing(address asset, bool siloed) external;
+
+  /**
+   * @notice Sets the borrow premium for a reserve.
+   * @param asset The address of the underlying asset of the reserve
+   * @param newBorrowPremium The new borrow premium, expressed in bps
+   */
+  function setBorrowPremium(address asset, uint128 newBorrowPremium) external;
 }
