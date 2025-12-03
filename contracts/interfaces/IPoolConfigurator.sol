@@ -226,6 +226,14 @@ interface IPoolConfigurator {
   event SiloedBorrowingChanged(address indexed asset, bool oldState, bool newState);
 
   /**
+   * @dev Emitted when the forced liquidation state for an asset is changed.
+   * @param asset The address of the underlying asset of the reserve
+   * @param oldEnabled The old forced liquidation enabled state
+   * @param newEnabled The new forced liquidation enabled state
+   */
+  event ForcedLiquidationEnabledChange(address indexed asset, bool oldEnabled, bool newEnabled);
+
+  /**
    * @dev Emitted when the bridge protocol fee is updated.
    * @param oldBridgeProtocolFee The old protocol fee, expressed in bps
    * @param newBridgeProtocolFee The new protocol fee, expressed in bps
@@ -483,4 +491,11 @@ interface IPoolConfigurator {
    * @param siloed The new siloed borrowing state
    */
   function setSiloedBorrowing(address asset, bool siloed) external;
+
+  /**
+   * @notice Enable or disable forced liquidation for an asset
+   * @param asset The address of the underlying asset of the reserve
+   * @param enabled True if forced liquidation should be enabled, false otherwise
+   */
+  function setForcedLiquidationEnabled(address asset, bool enabled) external;
 }

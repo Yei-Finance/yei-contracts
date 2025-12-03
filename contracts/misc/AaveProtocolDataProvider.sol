@@ -290,4 +290,12 @@ contract AaveProtocolDataProvider is IPoolDataProvider {
 
     return configuration.getFlashLoanEnabled();
   }
+
+  /// @inheritdoc IPoolDataProvider
+  function getForcedLiquidationEnabled(address asset) external view override returns (bool) {
+    DataTypes.ReserveConfigurationMap memory configuration = IPool(ADDRESSES_PROVIDER.getPool())
+      .getConfiguration(asset);
+
+    return configuration.getIsForcedLiquidationEnabled();
+  }
 }

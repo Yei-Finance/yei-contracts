@@ -284,6 +284,19 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
   }
 
   /// @inheritdoc IPoolConfigurator
+  function setForcedLiquidationEnabled(
+    address asset,
+    bool enabled
+  ) external override onlyRiskOrPoolAdmins {
+    DataTypes.ReserveConfigurationMap memory currentConfig = _pool.getConfiguration(asset);
+    require(currentConfig.getFrozen(), Errors.OPERATION_NOT_SUPPORTED);
+    bool oldEnabled = currentConfig.getIsForcedLiquidationEnabled();
+    currentConfig.setIsForcedLiquidationEnabled(enabled);
+    _pool.setConfiguration(asset, currentConfig);
+    emit ForcedLiquidationEnabledChange(asset, oldEnabled, enabled);
+  }
+
+  /// @inheritdoc IPoolConfigurator
   function setBorrowCap(
     address asset,
     uint256 newBorrowCap

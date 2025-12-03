@@ -186,6 +186,38 @@ interface IPool {
   );
 
   /**
+   * @dev Emitted when a forced liquidation is executed
+   * @param collateralAsset The address of the underlying asset used as collateral
+   * @param debtAsset The address of the underlying borrowed asset to be repaid
+   * @param user The address of the borrower getting liquidated
+   * @param debtToCover The debt amount of borrowed asset the liquidator wants to cover
+   * @param liquidatedCollateralAmount The amount of collateral received by the liquidator
+   * @param liquidator The address of the liquidator
+   * @param receiveAToken True if the liquidator received aTokens, false if underlying
+   */
+  event ForcedLiquidationCall(
+    address indexed collateralAsset,
+    address indexed debtAsset,
+    address indexed user,
+    uint256 debtToCover,
+    uint256 liquidatedCollateralAmount,
+    address liquidator,
+    bool receiveAToken
+  );
+
+  /**
+   * @dev Emitted when an address is added to the force liquidation whitelist
+   * @param user The address added to the whitelist
+   */
+  event ForcedLiquidationWhitelistAdd(address indexed user);
+
+  /**
+   * @dev Emitted when an address is removed from the force liquidation whitelist
+   * @param user The address removed from the whitelist
+   */
+  event ForcedLiquidationWhitelistRemove(address indexed user);
+
+  /**
    * @dev Emitted when the state of a reserve is updated.
    * @param reserve The address of the underlying asset of the reserve
    * @param liquidityRate The next liquidity rate
@@ -734,4 +766,23 @@ interface IPool {
    *   0 if the action is executed directly by the user, without any middle-man
    */
   function deposit(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
+
+  /**
+   * @notice Adds an address to the force liquidation whitelist
+   * @param user The address to add to the whitelist
+   */
+  function addToForcedLiquidationWhitelist(address user) external;
+
+  /**
+   * @notice Removes an address from the force liquidation whitelist
+   * @param user The address to remove from the whitelist
+   */
+  function removeFromForcedLiquidationWhitelist(address user) external;
+
+  /**
+   * @notice Checks if an address is in the force liquidation whitelist
+   * @param user The address to check
+   * @return True if the address is whitelisted, false otherwise
+   */
+  function isInForcedLiquidationWhitelist(address user) external view returns (bool);
 }

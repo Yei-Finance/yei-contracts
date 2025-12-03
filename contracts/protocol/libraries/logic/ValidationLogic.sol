@@ -509,18 +509,24 @@ library ValidationLogic {
       .reserveConfiguration
       .getFlags();
 
+    bool isForcedLiquidationEnabled = params
+      .debtReserveCache
+      .reserveConfiguration
+      .getIsForcedLiquidationEnabled();
+
     require(vars.collateralReserveActive && vars.principalReserveActive, Errors.RESERVE_INACTIVE);
     require(!vars.collateralReservePaused && !vars.principalReservePaused, Errors.RESERVE_PAUSED);
 
     require(
       params.priceOracleSentinel == address(0) ||
+        isForcedLiquidationEnabled ||
         params.healthFactor < MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD ||
         IPriceOracleSentinel(params.priceOracleSentinel).isLiquidationAllowed(),
       Errors.PRICE_ORACLE_SENTINEL_CHECK_FAILED
     );
 
     require(
-      params.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
+      isForcedLiquidationEnabled || params.healthFactor < HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
       Errors.HEALTH_FACTOR_NOT_BELOW_THRESHOLD
     );
 
