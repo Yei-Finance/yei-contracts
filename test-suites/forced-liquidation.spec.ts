@@ -14,8 +14,8 @@ makeSuite('Pool Forced Liquidation', (testEnv: TestEnv) => {
   const { INVALID_HF } = ProtocolErrors;
 
   before(async () => {
-    // await rawBRE.deployments.fixture(['market']);
-    // await initializeMakeSuite();
+    await rawBRE.deployments.fixture(['market']);
+    await initializeMakeSuite();
 
     const { addressesProvider, oracle } = testEnv;
     await waitForTx(await addressesProvider.setPriceOracle(oracle.address));
@@ -70,6 +70,15 @@ makeSuite('Pool Forced Liquidation', (testEnv: TestEnv) => {
 
     const isDisabled = await helpersContract.getForcedLiquidationEnabled(usdc.address);
     expect(isDisabled).to.be.false;
+  });
+
+  it('Enable forced liquidation on not frozen reserve will be reverted', async () => {
+    const { configurator, usdc, poolAdmin } = testEnv;
+
+    // Attempt to enable forced liquidation on non-frozen reserve - should revert
+    await expect(
+      configurator.connect(poolAdmin.signer).setForcedLiquidationEnabled(usdc.address, true)
+    ).to.be.revertedWith('80'); // OPERATION_NOT_SUPPORTED
   });
 
   it('Manage forced liquidation whitelist', async () => {
