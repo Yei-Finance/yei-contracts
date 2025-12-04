@@ -364,10 +364,10 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     bool receiveAToken
   ) public virtual override {
     DataTypes.ReserveCache memory debtCache = _reserves[debtAsset].cache();
-    bool isForcedEnabled = ReserveConfiguration.getIsForcedLiquidationEnabled(
+    bool isForcedLiquidationEnabled = ReserveConfiguration.getIsForcedLiquidationEnabled(
       debtCache.reserveConfiguration
     );
-    if (isForcedEnabled && msg.sender != user) {
+    if (isForcedLiquidationEnabled && msg.sender != user) {
       require(
         _ForcedLiquidationWhitelist[msg.sender],
         Errors.FORCED_LIQUIDATION_CALLER_NOT_AUTHORIZED
