@@ -72,6 +72,25 @@ makeSuite('Pool Forced Liquidation', (testEnv: TestEnv) => {
     expect(isDisabled).to.be.false;
   });
 
+  it('Unfreeze reserve with forced liquidation enabled will be reverted', async () => {
+    const { configurator, usdc, poolAdmin } = testEnv;
+
+    // Freeze USDC reserve first (prerequisite for forced liquidation)
+    await waitForTx(
+      await configurator.connect(poolAdmin.signer).setReserveFreeze(usdc.address, true)
+    );
+
+    // Enable forced liquidation for USDC
+    await waitForTx(
+      await configurator.connect(poolAdmin.signer).setForcedLiquidationEnabled(usdc.address, true)
+    );
+
+    // Attempt to unfreeze the reserve while forced liquidation is enabled - should revert
+    await expect(
+      configurator.connect(poolAdmin.signer).setReserveFreeze(usdc.address, false)
+    ).to.be.revertedWith('80'); // OPERATION_NOT_SUPPORTED
+  });
+
   it('Enable forced liquidation on not frozen reserve will be reverted', async () => {
     const { configurator, usdc, poolAdmin } = testEnv;
 

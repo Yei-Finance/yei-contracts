@@ -206,6 +206,7 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
   /// @inheritdoc IPoolConfigurator
   function setReserveFreeze(address asset, bool freeze) external override onlyRiskOrPoolAdmins {
     DataTypes.ReserveConfigurationMap memory currentConfig = _pool.getConfiguration(asset);
+    require(!currentConfig.getIsForcedLiquidationEnabled(), Errors.OPERATION_NOT_SUPPORTED);
     currentConfig.setFrozen(freeze);
     _pool.setConfiguration(asset, currentConfig);
     emit ReserveFrozen(asset, freeze);
