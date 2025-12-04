@@ -369,7 +369,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     );
     if (isForcedLiquidationEnabled && msg.sender != user) {
       require(
-        _ForcedLiquidationWhitelist[msg.sender],
+        _forcedLiquidationWhitelist[msg.sender],
         Errors.FORCED_LIQUIDATION_CALLER_NOT_AUTHORIZED
       );
     }
@@ -748,7 +748,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
 
   /// @inheritdoc IPool
   function addToForcedLiquidationWhitelist(address user) external virtual override onlyPoolAdmin {
-    _ForcedLiquidationWhitelist[user] = true;
+    _forcedLiquidationWhitelist[user] = true;
     emit ForcedLiquidationWhitelistAdd(user);
   }
 
@@ -756,7 +756,7 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
   function removeFromForcedLiquidationWhitelist(
     address user
   ) external virtual override onlyPoolAdmin {
-    _ForcedLiquidationWhitelist[user] = false;
+    _forcedLiquidationWhitelist[user] = false;
     emit ForcedLiquidationWhitelistRemove(user);
   }
 
@@ -764,6 +764,6 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
   function isInForcedLiquidationWhitelist(
     address user
   ) external view virtual override returns (bool) {
-    return _ForcedLiquidationWhitelist[user];
+    return _forcedLiquidationWhitelist[user];
   }
 }
