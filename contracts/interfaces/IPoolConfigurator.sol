@@ -231,7 +231,19 @@ interface IPoolConfigurator {
    * @param oldEnabled The old forced liquidation enabled state
    * @param newEnabled The new forced liquidation enabled state
    */
-  event ForcedLiquidationEnabledChange(address indexed asset, bool oldEnabled, bool newEnabled);
+  event ForcedLiquidationEnabledChanged(address indexed asset, bool oldEnabled, bool newEnabled);
+
+  /**
+   * @dev Emitted when an address is added to the forced liquidation whitelist.
+   * @param user The address added to the whitelist
+   */
+  event ForcedLiquidationWhitelistAdd(address indexed user);
+
+  /**
+   * @dev Emitted when an address is removed from the forced liquidation whitelist.
+   * @param user The address removed from the whitelist
+   */
+  event ForcedLiquidationWhitelistRemove(address indexed user);
 
   /**
    * @dev Emitted when the bridge protocol fee is updated.
@@ -498,4 +510,16 @@ interface IPoolConfigurator {
    * @param enabled True if forced liquidation should be enabled, false otherwise
    */
   function setForcedLiquidationEnabled(address asset, bool enabled) external;
+
+  /**
+   * @notice Adds an address to the forced liquidation whitelist
+   * @param user The address to add to the whitelist
+   */
+  function addToForcedLiquidationWhitelist(address user) external;
+
+  /**
+   * @notice Removes an address from the forced liquidation whitelist
+   * @param user The address to remove from the whitelist
+   */
+  function removeFromForcedLiquidationWhitelist(address user) external;
 }

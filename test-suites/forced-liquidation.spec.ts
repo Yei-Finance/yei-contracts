@@ -101,18 +101,20 @@ makeSuite('Pool Forced Liquidation', (testEnv: TestEnv) => {
   });
 
   it('Manage forced liquidation whitelist', async () => {
-    const { pool, users, poolAdmin } = testEnv;
+    const { pool, configurator, users, poolAdmin } = testEnv;
     const user = users[0];
 
     // Add address to whitelist
     await waitForTx(
-      await pool.connect(poolAdmin.signer).addToForcedLiquidationWhitelist(user.address)
+      await configurator.connect(poolAdmin.signer).addToForcedLiquidationWhitelist(user.address)
     );
     expect(await pool.isInForcedLiquidationWhitelist(user.address)).to.be.true;
 
     // Remove address from whitelist
     await waitForTx(
-      await pool.connect(poolAdmin.signer).removeFromForcedLiquidationWhitelist(user.address)
+      await configurator
+        .connect(poolAdmin.signer)
+        .removeFromForcedLiquidationWhitelist(user.address)
     );
     expect(await pool.isInForcedLiquidationWhitelist(user.address)).to.be.false;
   });
@@ -167,7 +169,9 @@ makeSuite('Pool Forced Liquidation', (testEnv: TestEnv) => {
     );
     // Add liquidator to whitelist
     await waitForTx(
-      await pool.connect(poolAdmin.signer).addToForcedLiquidationWhitelist(liquidator.address)
+      await configurator
+        .connect(poolAdmin.signer)
+        .addToForcedLiquidationWhitelist(liquidator.address)
     );
 
     // Get initial balances
@@ -270,7 +274,9 @@ makeSuite('Pool Forced Liquidation', (testEnv: TestEnv) => {
     );
     // Add liquidator to whitelist
     await waitForTx(
-      await pool.connect(poolAdmin.signer).addToForcedLiquidationWhitelist(liquidator.address)
+      await configurator
+        .connect(poolAdmin.signer)
+        .addToForcedLiquidationWhitelist(liquidator.address)
     );
 
     // Get initial balances
@@ -481,7 +487,9 @@ makeSuite('Pool Forced Liquidation', (testEnv: TestEnv) => {
     );
     // Add liquidator to whitelist
     await waitForTx(
-      await pool.connect(poolAdmin.signer).addToForcedLiquidationWhitelist(liquidator.address)
+      await configurator
+        .connect(poolAdmin.signer)
+        .addToForcedLiquidationWhitelist(liquidator.address)
     );
 
     // Verify health factor is above 1
@@ -561,7 +569,9 @@ makeSuite('Pool Forced Liquidation', (testEnv: TestEnv) => {
 
     // Add liquidator to whitelist
     await waitForTx(
-      await pool.connect(poolAdmin.signer).addToForcedLiquidationWhitelist(liquidator.address)
+      await configurator
+        .connect(poolAdmin.signer)
+        .addToForcedLiquidationWhitelist(liquidator.address)
     );
 
     // Test that both ForcedLiquidationCall and LiquidationCall events are emitted

@@ -746,18 +746,16 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     );
   }
 
-  /// @inheritdoc IPool
-  function addToForcedLiquidationWhitelist(address user) external virtual override onlyPoolAdmin {
-    _forcedLiquidationWhitelist[user] = true;
-    emit ForcedLiquidationWhitelistAdd(user);
-  }
-
-  /// @inheritdoc IPool
-  function removeFromForcedLiquidationWhitelist(
-    address user
-  ) external virtual override onlyPoolAdmin {
-    _forcedLiquidationWhitelist[user] = false;
-    emit ForcedLiquidationWhitelistRemove(user);
+  /**
+   * @dev Internal function to update the forced liquidation whitelist
+   * @param user The address to update
+   * @param whitelisted True if the user should be whitelisted, false otherwise
+   */
+  function updateForcedLiquidationWhitelist(
+    address user,
+    bool whitelisted
+  ) external virtual override onlyPoolConfigurator {
+    _forcedLiquidationWhitelist[user] = whitelisted;
   }
 
   /// @inheritdoc IPool

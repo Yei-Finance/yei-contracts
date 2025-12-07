@@ -294,7 +294,19 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
     bool oldEnabled = currentConfig.getIsForcedLiquidationEnabled();
     currentConfig.setIsForcedLiquidationEnabled(enabled);
     _pool.setConfiguration(asset, currentConfig);
-    emit ForcedLiquidationEnabledChange(asset, oldEnabled, enabled);
+    emit ForcedLiquidationEnabledChanged(asset, oldEnabled, enabled);
+  }
+
+  /// @inheritdoc IPoolConfigurator
+  function addToForcedLiquidationWhitelist(address user) external override onlyPoolAdmin {
+    _pool.updateForcedLiquidationWhitelist(user, true);
+    emit ForcedLiquidationWhitelistAdd(user);
+  }
+
+  /// @inheritdoc IPoolConfigurator
+  function removeFromForcedLiquidationWhitelist(address user) external override onlyPoolAdmin {
+    _pool.updateForcedLiquidationWhitelist(user, false);
+    emit ForcedLiquidationWhitelistRemove(user);
   }
 
   /// @inheritdoc IPoolConfigurator

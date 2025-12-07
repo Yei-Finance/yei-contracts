@@ -206,18 +206,6 @@ interface IPool {
   );
 
   /**
-   * @dev Emitted when an address is added to the forced liquidation whitelist
-   * @param user The address added to the whitelist
-   */
-  event ForcedLiquidationWhitelistAdd(address indexed user);
-
-  /**
-   * @dev Emitted when an address is removed from the forced liquidation whitelist
-   * @param user The address removed from the whitelist
-   */
-  event ForcedLiquidationWhitelistRemove(address indexed user);
-
-  /**
    * @dev Emitted when the state of a reserve is updated.
    * @param reserve The address of the underlying asset of the reserve
    * @param liquidityRate The next liquidity rate
@@ -768,21 +756,16 @@ interface IPool {
   function deposit(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
 
   /**
-   * @notice Adds an address to the forced liquidation whitelist
-   * @param user The address to add to the whitelist
-   */
-  function addToForcedLiquidationWhitelist(address user) external;
-
-  /**
-   * @notice Removes an address from the forced liquidation whitelist
-   * @param user The address to remove from the whitelist
-   */
-  function removeFromForcedLiquidationWhitelist(address user) external;
-
-  /**
    * @notice Checks if an address is in the forced liquidation whitelist
    * @param user The address to check
    * @return True if the address is whitelisted, false otherwise
    */
   function isInForcedLiquidationWhitelist(address user) external view returns (bool);
+
+  /**
+   * @dev Internal function to update the forced liquidation whitelist
+   * @param user The address to update
+   * @param whitelisted True if the user should be whitelisted, false otherwise
+   */
+  function updateForcedLiquidationWhitelist(address user, bool whitelisted) external;
 }
