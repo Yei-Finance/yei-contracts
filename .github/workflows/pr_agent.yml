@@ -17,6 +17,6 @@ jobs:
         uses: qodo-ai/pr-agent@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          config.model: "anthropic/claude-opus-4-5-20251101"
+          config.model: 'anthropic/claude-opus-4-5-20251101'
           config.fallback_models: '["anthropic/claude-sonnet-4-5-20250929"]'
           ANTHROPIC.KEY: ${{ secrets.ANTHROPIC_KEY }}
