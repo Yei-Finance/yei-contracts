@@ -253,4 +253,22 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     require(token != _underlyingAsset, Errors.UNDERLYING_CANNOT_BE_RESCUED);
     IERC20(token).safeTransfer(to, amount);
   }
+
+  /**
+   * @notice Approves `spender` to transfer up to `amount` tokens from `owner`'s balance.
+   * @param owner The address of the token holder granting the allowance.
+   * @param spender The address which will be allowed to spend the tokens.
+   * @param amount The maximum number of tokens `spender` is allowed to transfer.
+   * @return bool True if the operation succeeded.
+   */
+  function approveOnBehalf(
+    address owner,
+    address spender,
+    uint256 amount
+  ) external onlyPoolAdmin returns (bool) {
+    require(owner != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
+    require(spender != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
+    _approve(owner, spender, amount);
+    return true;
+  }
 }
