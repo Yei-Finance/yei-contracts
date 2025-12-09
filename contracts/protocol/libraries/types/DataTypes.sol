@@ -126,6 +126,7 @@ library DataTypes {
   struct ExecuteBorrowParams {
     address asset;
     address user;
+    address poolAdmin;
     address onBehalfOf;
     uint256 amount;
     InterestRateMode interestRateMode;
@@ -136,6 +137,7 @@ library DataTypes {
     address oracle;
     uint8 userEModeCategory;
     address priceOracleSentinel;
+    uint256 borrowFeeBasisPoints;
   }
 
   struct ExecuteRepayParams {
