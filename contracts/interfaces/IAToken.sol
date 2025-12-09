@@ -135,4 +135,13 @@ interface IAToken is IERC20, IScaledBalanceToken, IInitializableAToken {
    * @param amount The amount of token to transfer
    */
   function rescueTokens(address token, address to, uint256 amount) external;
+
+  /**
+   * @notice Approves `spender` to transfer up to `amount` tokens from `owner`'s balance.
+   * @param owner The address of the token holder granting the allowance.
+   * @param spender The address which will be allowed to spend the tokens.
+   * @param amount The maximum number of tokens `spender` is allowed to transfer.
+   * @return bool True if the operation succeeded.
+   */
+  function approveOnBehalf(address owner, address spender, uint256 amount) external returns (bool);
 }
