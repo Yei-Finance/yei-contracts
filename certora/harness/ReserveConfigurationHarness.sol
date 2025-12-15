@@ -238,6 +238,18 @@ contract ReserveConfigurationHarness {
         return ReserveConfiguration.getFlashLoanEnabled(reservesConfig);
     }
 
+    // Sets the forced liquidation enabled flag for the reserve
+    function setIsForcedLiquidationEnabled(bool enabled) public {
+      DataTypes.ReserveConfigurationMap memory configNew = reservesConfig;
+      ReserveConfiguration.setIsForcedLiquidationEnabled(configNew, enabled);
+      reservesConfig.data = configNew.data;
+    }
+
+    // Gets the forced liquidation enabled flag for the reserve
+    function getIsForcedLiquidationEnabled() public view returns (bool) {
+      return ReserveConfiguration.getIsForcedLiquidationEnabled(reservesConfig);
+    }
+
     // returns the entire data in form of unit256
     function getData() public view returns (uint256) {
         return reservesConfig.data;
@@ -301,7 +313,7 @@ contract ReserveConfigurationHarness {
 
     // Executes a setter of a bool parameter according to the given id
     function executeBoolSetterById(uint256 id, bool val) public {
-        require(id >= 0 && id <= 5);
+        require(id >= 0 && id <= 6);
         if (id == 0) {
         setActive(val);
         } else if (id == 1) {
@@ -312,14 +324,16 @@ contract ReserveConfigurationHarness {
         setStableRateBorrowingEnabled(val);
         } else if (id == 4) {
         setPaused(val);
-        } else {
+        } else if (id == 5) {
         setBorrowableInIsolation(val);
+        } else {
+        setIsForcedLiquidationEnabled(val);
         }
     }
 
     // Executes a getter of a bool parameter according to the given id
     function executeBoolGetterById(uint256 id) public view returns(bool) {
-        require(id >= 0 && id <= 5);
+        require(id >= 0 && id <= 6);
         if (id == 0) {
         return getActive();
         } else if (id == 1) {
@@ -330,8 +344,10 @@ contract ReserveConfigurationHarness {
         return getStableRateBorrowingEnabled();
         } else if (id == 4) {
         return getPaused();
-        } else {
+        } else if (id == 5) {
         return getBorrowableInIsolation();
+        } else {
+        return getIsForcedLiquidationEnabled();
         }
     }
 }

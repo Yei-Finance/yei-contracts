@@ -66,7 +66,7 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
     _;
   }
 
-  uint256 public constant CONFIGURATOR_REVISION = 0x1;
+  uint256 public constant CONFIGURATOR_REVISION = 0x2;
 
   /// @inheritdoc VersionedInitializable
   function getRevision() internal pure virtual override returns (uint256) {
@@ -206,6 +206,7 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
   /// @inheritdoc IPoolConfigurator
   function setReserveFreeze(address asset, bool freeze) external override onlyRiskOrPoolAdmins {
     DataTypes.ReserveConfigurationMap memory currentConfig = _pool.getConfiguration(asset);
+    require(!currentConfig.getIsForcedLiquidationEnabled(), Errors.OPERATION_NOT_SUPPORTED);
     currentConfig.setFrozen(freeze);
     _pool.setConfiguration(asset, currentConfig);
     emit ReserveFrozen(asset, freeze);
@@ -281,6 +282,31 @@ contract PoolConfigurator is VersionedInitializable, IPoolConfigurator {
     _pool.setConfiguration(asset, currentConfig);
 
     emit SiloedBorrowingChanged(asset, oldSiloed, newSiloed);
+  }
+
+  /// @inheritdoc IPoolConfigurator
+  function setForcedLiquidationEnabled(
+    address asset,
+    bool enabled
+  ) external override onlyRiskOrPoolAdmins {
+    DataTypes.ReserveConfigurationMap memory currentConfig = _pool.getConfiguration(asset);
+    require(currentConfig.getFrozen(), Errors.OPERATION_NOT_SUPPORTED);
+    bool oldEnabled = currentConfig.getIsForcedLiquidationEnabled();
+    currentConfig.setIsForcedLiquidationEnabled(enabled);
+    _pool.setConfiguration(asset, currentConfig);
+    emit ForcedLiquidationEnabledChanged(asset, oldEnabled, enabled);
+  }
+
+  /// @inheritdoc IPoolConfigurator
+  function addToForcedLiquidationWhitelist(address user) external override onlyPoolAdmin {
+    _pool.updateForcedLiquidationWhitelist(user, true);
+    emit ForcedLiquidationWhitelistAdd(user);
+  }
+
+  /// @inheritdoc IPoolConfigurator
+  function removeFromForcedLiquidationWhitelist(address user) external override onlyPoolAdmin {
+    _pool.updateForcedLiquidationWhitelist(user, false);
+    emit ForcedLiquidationWhitelistRemove(user);
   }
 
   /// @inheritdoc IPoolConfigurator

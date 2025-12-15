@@ -29,6 +29,7 @@ library ReserveConfiguration {
   uint256 internal constant EMODE_CATEGORY_MASK =            0xFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF; // prettier-ignore
   uint256 internal constant UNBACKED_MINT_CAP_MASK =         0xFFFFFFFFFFF000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF; // prettier-ignore
   uint256 internal constant DEBT_CEILING_MASK =              0xF0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF; // prettier-ignore
+  uint256 internal constant IS_FORCED_LIQUIDATION_ENABLED_MASK = 0xEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF; // prettier-ignore
 
   /// @dev For the LTV, the start bit is 0 (up to 15), hence no bitshifting is needed
   uint256 internal constant LIQUIDATION_THRESHOLD_START_BIT_POSITION = 16;
@@ -49,6 +50,7 @@ library ReserveConfiguration {
   uint256 internal constant EMODE_CATEGORY_START_BIT_POSITION = 168;
   uint256 internal constant UNBACKED_MINT_CAP_START_BIT_POSITION = 176;
   uint256 internal constant DEBT_CEILING_START_BIT_POSITION = 212;
+  uint256 internal constant IS_FORCED_LIQUIDATION_ENABLED_START_BIT_POSITION = 252;
 
   uint256 internal constant MAX_VALID_LTV = 65535;
   uint256 internal constant MAX_VALID_LIQUIDATION_THRESHOLD = 65535;
@@ -607,5 +609,30 @@ library ReserveConfiguration {
       (dataLocal & ~BORROW_CAP_MASK) >> BORROW_CAP_START_BIT_POSITION,
       (dataLocal & ~SUPPLY_CAP_MASK) >> SUPPLY_CAP_START_BIT_POSITION
     );
+  }
+
+  /**
+   * @notice Sets the forced liquidation enabled state of the reserve
+   * @param self The reserve configuration
+   * @param enabled The forced liquidation enabled state
+   */
+  function setIsForcedLiquidationEnabled(
+    DataTypes.ReserveConfigurationMap memory self,
+    bool enabled
+  ) internal pure {
+    self.data =
+      (self.data & IS_FORCED_LIQUIDATION_ENABLED_MASK) |
+      (uint256(enabled ? 1 : 0) << IS_FORCED_LIQUIDATION_ENABLED_START_BIT_POSITION);
+  }
+
+  /**
+   * @notice Gets the forced liquidation enabled state of the reserve
+   * @param self The reserve configuration
+   * @return The forced liquidation enabled state
+   */
+  function getIsForcedLiquidationEnabled(
+    DataTypes.ReserveConfigurationMap memory self
+  ) internal pure returns (bool) {
+    return (self.data & ~IS_FORCED_LIQUIDATION_ENABLED_MASK) != 0;
   }
 }

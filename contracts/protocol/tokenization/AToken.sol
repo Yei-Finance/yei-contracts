@@ -28,7 +28,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
   bytes32 public constant PERMIT_TYPEHASH =
     keccak256('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)');
 
-  uint256 public constant ATOKEN_REVISION = 0x1;
+  uint256 public constant ATOKEN_REVISION = 0x2;
 
   address internal _treasury;
   address internal _underlyingAsset;
@@ -252,5 +252,23 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
   function rescueTokens(address token, address to, uint256 amount) external override onlyPoolAdmin {
     require(token != _underlyingAsset, Errors.UNDERLYING_CANNOT_BE_RESCUED);
     IERC20(token).safeTransfer(to, amount);
+  }
+
+  /**
+   * @notice Approves `spender` to transfer up to `amount` tokens from `owner`'s balance.
+   * @param owner The address of the token holder granting the allowance.
+   * @param spender The address which will be allowed to spend the tokens.
+   * @param amount The maximum number of tokens `spender` is allowed to transfer.
+   * @return bool True if the operation succeeded.
+   */
+  function approveOnBehalf(
+    address owner,
+    address spender,
+    uint256 amount
+  ) external onlyPoolAdmin returns (bool) {
+    require(owner != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
+    require(spender != address(0), Errors.ZERO_ADDRESS_NOT_VALID);
+    _approve(owner, spender, amount);
+    return true;
   }
 }

@@ -39,7 +39,7 @@ import {PoolStorage} from './PoolStorage.sol';
 contract Pool is VersionedInitializable, PoolStorage, IPool {
   using ReserveLogic for DataTypes.ReserveData;
 
-  uint256 public constant POOL_REVISION = 0x1;
+  uint256 public constant POOL_REVISION = 0x2;
   IPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
 
   /**
@@ -363,6 +363,17 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
     uint256 debtToCover,
     bool receiveAToken
   ) public virtual override {
+    DataTypes.ReserveCache memory debtCache = _reserves[debtAsset].cache();
+    bool isForcedLiquidationEnabled = ReserveConfiguration.getIsForcedLiquidationEnabled(
+      debtCache.reserveConfiguration
+    );
+    if (isForcedLiquidationEnabled && msg.sender != user) {
+      require(
+        _forcedLiquidationWhitelist[msg.sender],
+        Errors.FORCED_LIQUIDATION_CALLER_NOT_AUTHORIZED
+      );
+    }
+
     LiquidationLogic.executeLiquidationCall(
       _reserves,
       _reservesList,
@@ -733,5 +744,24 @@ contract Pool is VersionedInitializable, PoolStorage, IPool {
         referralCode: referralCode
       })
     );
+  }
+
+  /**
+   * @dev Internal function to update the forced liquidation whitelist
+   * @param user The address to update
+   * @param whitelisted True if the user should be whitelisted, false otherwise
+   */
+  function updateForcedLiquidationWhitelist(
+    address user,
+    bool whitelisted
+  ) external virtual override onlyPoolConfigurator {
+    _forcedLiquidationWhitelist[user] = whitelisted;
+  }
+
+  /// @inheritdoc IPool
+  function isInForcedLiquidationWhitelist(
+    address user
+  ) external view virtual override returns (bool) {
+    return _forcedLiquidationWhitelist[user];
   }
 }

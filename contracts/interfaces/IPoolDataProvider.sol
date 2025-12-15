@@ -240,4 +240,11 @@ interface IPoolDataProvider {
    * @return True if FlashLoans are enabled, false otherwise
    */
   function getFlashLoanEnabled(address asset) external view returns (bool);
+
+  /**
+   * @notice Returns whether forced liquidation is enabled for the reserve
+   * @param asset The address of the underlying asset of the reserve
+   * @return True if forced liquidation is enabled, false otherwise
+   */
+  function getForcedLiquidationEnabled(address asset) external view returns (bool);
 }

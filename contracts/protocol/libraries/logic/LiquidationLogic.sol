@@ -45,6 +45,15 @@ library LiquidationLogic {
     address liquidator,
     bool receiveAToken
   );
+  event ForcedLiquidationCall(
+    address indexed collateralAsset,
+    address indexed debtAsset,
+    address indexed user,
+    uint256 debtToCover,
+    uint256 liquidatedCollateralAmount,
+    address liquidator,
+    bool receiveAToken
+  );
 
   /**
    * @dev Default percentage of borrower's debt to be repaid in a liquidation.
@@ -230,6 +239,25 @@ library LiquidationLogic {
       vars.actualDebtToLiquidate
     );
 
+    // Determine if this is a forced liquidation
+    // A forced liquidation occurs when forced liquidation is enabled
+    bool isForcedLiquidation = vars
+      .debtReserveCache
+      .reserveConfiguration
+      .getIsForcedLiquidationEnabled();
+
+    if (isForcedLiquidation) {
+      emit ForcedLiquidationCall(
+        params.collateralAsset,
+        params.debtAsset,
+        params.user,
+        vars.actualDebtToLiquidate,
+        vars.actualCollateralToLiquidate,
+        msg.sender,
+        params.receiveAToken
+      );
+    }
+
     emit LiquidationCall(
       params.collateralAsset,
       params.debtAsset,
@@ -372,9 +400,18 @@ library LiquidationLogic {
 
     uint256 userTotalDebt = userStableDebt + userVariableDebt;
 
-    uint256 closeFactor = healthFactor > CLOSE_FACTOR_HF_THRESHOLD
-      ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
-      : MAX_LIQUIDATION_CLOSE_FACTOR;
+    // Forced liquidations always allow the maximum close factor, while standard liquidations
+    // only reach the max when the health factor falls below the threshold (otherwise default applies)
+    bool isForcedLiquidationEnabled = debtReserveCache
+      .reserveConfiguration
+      .getIsForcedLiquidationEnabled();
+    uint256 closeFactor = isForcedLiquidationEnabled
+      ? MAX_LIQUIDATION_CLOSE_FACTOR
+      : (
+        healthFactor > CLOSE_FACTOR_HF_THRESHOLD
+          ? DEFAULT_LIQUIDATION_CLOSE_FACTOR
+          : MAX_LIQUIDATION_CLOSE_FACTOR
+      );
 
     uint256 maxLiquidatableDebt = userTotalDebt.percentMul(closeFactor);
 
