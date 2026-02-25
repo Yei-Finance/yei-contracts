@@ -56,6 +56,32 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
   }
 
   /**
+   * @notice Converts an underlying amount to a scaled amount for minting.
+   * @dev Override in subclasses to control rounding direction.
+   *  - AToken: rounds DOWN (floor) — mint fewer shares, favors protocol
+   *  - VariableDebtToken: rounds UP (ceil) — mint more debt shares, favors protocol
+   * @param amount The underlying amount
+   * @param index The current liquidity/borrow index
+   * @return The scaled amount
+   */
+  function _scaleMintAmount(uint256 amount, uint256 index) internal pure virtual returns (uint256) {
+    return amount.rayDiv(index);
+  }
+
+  /**
+   * @notice Converts an underlying amount to a scaled amount for burning.
+   * @dev Override in subclasses to control rounding direction.
+   *  - AToken: rounds UP (ceil) — burn more shares, favors protocol
+   *  - VariableDebtToken: rounds DOWN (floor) — burn fewer debt shares, favors protocol
+   * @param amount The underlying amount
+   * @param index The current liquidity/borrow index
+   * @return The scaled amount
+   */
+  function _scaleBurnAmount(uint256 amount, uint256 index) internal pure virtual returns (uint256) {
+    return amount.rayDiv(index);
+  }
+
+  /**
    * @notice Implements the basic logic to mint a scaled balance token.
    * @param caller The address performing the mint
    * @param onBehalfOf The address of the user that will receive the scaled tokens
@@ -69,7 +95,7 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
     uint256 amount,
     uint256 index
   ) internal returns (bool) {
-    uint256 amountScaled = amount.rayDiv(index);
+    uint256 amountScaled = _scaleMintAmount(amount, index);
     require(amountScaled != 0, Errors.INVALID_MINT_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(onBehalfOf);
@@ -97,7 +123,7 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
    * @param index The variable debt index of the reserve
    */
   function _burnScaled(address user, address target, uint256 amount, uint256 index) internal {
-    uint256 amountScaled = amount.rayDiv(index);
+    uint256 amountScaled = _scaleBurnAmount(amount, index);
     require(amountScaled != 0, Errors.INVALID_BURN_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(user);

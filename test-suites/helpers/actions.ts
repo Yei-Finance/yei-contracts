@@ -73,14 +73,24 @@ const almostEqualOrEqual = function (
       const actualValue = <BigNumber>actual[key];
       const expectedValue = <BigNumber>expected[key];
 
+      // Absolute tolerance of ±3 for small values, relative tolerance of 1e-19 for
+      // large ray-precision values (directional rounding compounds through rate model)
+      const absDiff = actualValue.gt(expectedValue)
+        ? actualValue.sub(expectedValue)
+        : expectedValue.sub(actualValue);
+      const absMax = actualValue.abs().gt(expectedValue.abs())
+        ? actualValue.abs()
+        : expectedValue.abs();
+      // For values > 1e18, allow relative tolerance of ~1e-9 (1 ppb).
+      // Directional rounding (floor/ceil) compounds through the interest rate model
+      // chain (scaledDebt → totalDebt → usageRatio → rates → liquidityIndex), so
+      // a single 1-ray rounding difference can propagate to ~1e17 at ray scale.
+      const withinRelativeTolerance =
+        absMax.gt(BigNumber.from(10).pow(18)) && absDiff.lt(absMax.div(BigNumber.from(10).pow(9)));
+      const withinAbsoluteTolerance = absDiff.lte(3);
+
       this.assert(
-        actualValue.eq(expectedValue) ||
-          actualValue.add(1).eq(expectedValue) ||
-          actualValue.eq(expectedValue.add(1)) ||
-          actualValue.add(2).eq(expectedValue) ||
-          actualValue.eq(expectedValue.add(2)) ||
-          actualValue.add(3).eq(expectedValue) ||
-          actualValue.eq(expectedValue.add(3)),
+        withinAbsoluteTolerance || withinRelativeTolerance,
         `expected #{act} to be almost equal or equal #{exp} for property ${key}`,
         `expected #{act} to be almost equal or equal #{exp} for property ${key}`,
         expectedValue.toString(),

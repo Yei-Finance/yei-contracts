@@ -77,6 +77,7 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
   }
 
   /// @inheritdoc IERC20
+  /// @dev Debt balanceOf rounds UP — never understate how much a borrower owes
   function balanceOf(address user) public view virtual override returns (uint256) {
     uint256 scaledBalance = super.balanceOf(user);
 
@@ -84,7 +85,7 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
       return 0;
     }
 
-    return scaledBalance.rayMul(POOL.getReserveNormalizedVariableDebt(_underlyingAsset));
+    return scaledBalance.rayMulCeil(POOL.getReserveNormalizedVariableDebt(_underlyingAsset));
   }
 
   /// @inheritdoc IVariableDebtToken
@@ -111,8 +112,9 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
   }
 
   /// @inheritdoc IERC20
+  /// @dev Debt totalSupply rounds UP — never understate total protocol debt
   function totalSupply() public view virtual override returns (uint256) {
-    return super.totalSupply().rayMul(POOL.getReserveNormalizedVariableDebt(_underlyingAsset));
+    return super.totalSupply().rayMulCeil(POOL.getReserveNormalizedVariableDebt(_underlyingAsset));
   }
 
   /// @inheritdoc EIP712Base
@@ -146,6 +148,16 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
 
   function decreaseAllowance(address, uint256) external virtual override returns (bool) {
     revert(Errors.OPERATION_NOT_SUPPORTED);
+  }
+
+  /// @dev VariableDebtToken: mint rounds UP (more debt shares — never understate debt)
+  function _scaleMintAmount(uint256 amount, uint256 index) internal pure override returns (uint256) {
+    return amount.rayDivCeil(index);
+  }
+
+  /// @dev VariableDebtToken: burn rounds DOWN (fewer debt shares burned — debt not cleared too easily)
+  function _scaleBurnAmount(uint256 amount, uint256 index) internal pure override returns (uint256) {
+    return amount.rayDivFloor(index);
   }
 
   /// @inheritdoc IVariableDebtToken

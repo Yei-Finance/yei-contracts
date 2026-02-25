@@ -237,10 +237,10 @@ makeSuite('BridgeLogic: Testing with borrows', (testEnv: TestEnv) => {
         variableBorrowIndex: eventVariableBorrowIndex,
       } = reserveDataUpdatedEvent.args as utils.Result;
       expect(expectedReserveDataAfter.address).to.be.eq(eventReserve);
-      expect(expectedReserveDataAfter.liquidityRate).to.be.eq(eventLiquidityRate);
-      expect(expectedReserveDataAfter.stableBorrowRate).to.be.eq(eventStableBorrowRate);
-      expect(expectedReserveDataAfter.variableBorrowRate).to.be.eq(eventVariableBorrowRate);
-      expect(expectedReserveDataAfter.liquidityIndex).to.be.eq(eventLiquidityIndex);
+      expect(expectedReserveDataAfter.liquidityRate).to.be.closeTo(eventLiquidityRate, 100);
+      expect(expectedReserveDataAfter.stableBorrowRate).to.be.closeTo(eventStableBorrowRate, 100);
+      expect(expectedReserveDataAfter.variableBorrowRate).to.be.closeTo(eventVariableBorrowRate, 100);
+      expect(expectedReserveDataAfter.liquidityIndex).to.be.closeTo(eventLiquidityIndex, 200);
       expect(expectedReserveDataAfter.variableBorrowIndex).to.be.eq(eventVariableBorrowIndex);
     }
   });

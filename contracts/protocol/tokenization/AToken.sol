@@ -128,7 +128,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
   function balanceOf(
     address user
   ) public view virtual override(IncentivizedERC20, IERC20) returns (uint256) {
-    return super.balanceOf(user).rayMul(POOL.getReserveNormalizedIncome(_underlyingAsset));
+    return super.balanceOf(user).rayMulFloor(POOL.getReserveNormalizedIncome(_underlyingAsset));
   }
 
   /// @inheritdoc IERC20
@@ -139,7 +139,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
       return 0;
     }
 
-    return currentSupplyScaled.rayMul(POOL.getReserveNormalizedIncome(_underlyingAsset));
+    return currentSupplyScaled.rayMulFloor(POOL.getReserveNormalizedIncome(_underlyingAsset));
   }
 
   /// @inheritdoc IAToken
@@ -246,6 +246,16 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
   /// @inheritdoc EIP712Base
   function _EIP712BaseId() internal view override returns (string memory) {
     return name();
+  }
+
+  /// @dev AToken: mint rounds DOWN (fewer shares minted — protocol keeps value)
+  function _scaleMintAmount(uint256 amount, uint256 index) internal pure override returns (uint256) {
+    return amount.rayDivFloor(index);
+  }
+
+  /// @dev AToken: burn rounds UP (more shares burned — user can't extract extra)
+  function _scaleBurnAmount(uint256 amount, uint256 index) internal pure override returns (uint256) {
+    return amount.rayDivCeil(index);
   }
 
   /// @inheritdoc IAToken

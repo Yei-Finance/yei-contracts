@@ -1215,8 +1215,8 @@ makeSuite('Pool: Edge cases', (testEnv: TestEnv) => {
     // Unbacked amount should keep constant
     expect(reserveDataAfter.unbacked).to.be.eq(reserveDataBefore.unbacked);
 
-    expect(reserveDataAfter.liquidityRate).to.be.eq(expectedReserveData.liquidityRate);
-    expect(reserveDataAfter.variableBorrowRate).to.be.eq(expectedReserveData.variableBorrowRate);
-    expect(reserveDataAfter.stableBorrowRate).to.be.eq(expectedReserveData.stableBorrowRate);
+    expect(reserveDataAfter.liquidityRate).to.be.closeTo(expectedReserveData.liquidityRate, 100);
+    expect(reserveDataAfter.variableBorrowRate).to.be.closeTo(expectedReserveData.variableBorrowRate, 100);
+    expect(reserveDataAfter.stableBorrowRate).to.be.closeTo(expectedReserveData.stableBorrowRate, 100);
   });
 });

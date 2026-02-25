@@ -92,6 +92,80 @@ library WadRayMath {
   }
 
   /**
+   * @notice Multiplies two ray, rounding down to the nearest ray (floor)
+   * @dev Used where rounding must favor the protocol (e.g., aToken balanceOf)
+   * @param a Ray
+   * @param b Ray
+   * @return c = a raymul b, rounded down
+   */
+  function rayMulFloor(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= type(uint256).max / b
+    assembly {
+      if iszero(or(iszero(b), iszero(gt(a, div(not(0), b))))) {
+        revert(0, 0)
+      }
+
+      c := div(mul(a, b), RAY)
+    }
+  }
+
+  /**
+   * @notice Divides two ray, rounding down to the nearest ray (floor)
+   * @dev Used where rounding must favor the protocol (e.g., aToken mint — fewer shares minted)
+   * @param a Ray
+   * @param b Ray
+   * @return c = a raydiv b, rounded down
+   */
+  function rayDivFloor(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= type(uint256).max / RAY
+    assembly {
+      if or(iszero(b), iszero(iszero(gt(a, div(not(0), RAY))))) {
+        revert(0, 0)
+      }
+
+      c := div(mul(a, RAY), b)
+    }
+  }
+
+  /**
+   * @notice Multiplies two ray, rounding up (ceil)
+   * @dev Used where rounding must favor the protocol (e.g., debt balanceOf — never understate debt)
+   * @param a Ray
+   * @param b Ray
+   * @return c = a raymul b, rounded up
+   */
+  function rayMulCeil(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= type(uint256).max / b
+    assembly {
+      if iszero(or(iszero(b), iszero(gt(a, div(not(0), b))))) {
+        revert(0, 0)
+      }
+
+      let prod := mul(a, b)
+      c := add(div(prod, RAY), gt(mod(prod, RAY), 0))
+    }
+  }
+
+  /**
+   * @notice Divides two ray, rounding up (ceil)
+   * @dev Used where rounding must favor the protocol (e.g., aToken burn — more shares burned)
+   * @param a Ray
+   * @param b Ray
+   * @return c = a raydiv b, rounded up
+   */
+  function rayDivCeil(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= type(uint256).max / RAY
+    assembly {
+      if or(iszero(b), iszero(iszero(gt(a, div(not(0), RAY))))) {
+        revert(0, 0)
+      }
+
+      let scaled := mul(a, RAY)
+      c := add(div(scaled, b), gt(mod(scaled, b), 0))
+    }
+  }
+
+  /**
    * @dev Casts ray down to wad
    * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
    * @param a Ray
