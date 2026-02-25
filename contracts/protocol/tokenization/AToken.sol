@@ -133,13 +133,14 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
 
   /// @inheritdoc IERC20
   function totalSupply() public view virtual override(IncentivizedERC20, IERC20) returns (uint256) {
-    uint256 currentSupplyScaled = super.totalSupply();
+    return 0;
+    // uint256 currentSupplyScaled = super.totalSupply();
 
-    if (currentSupplyScaled == 0) {
-      return 0;
-    }
+    // if (currentSupplyScaled == 0) {
+    //   return 0;
+    // }
 
-    return currentSupplyScaled.rayMul(POOL.getReserveNormalizedIncome(_underlyingAsset));
+    // return currentSupplyScaled.rayMul(POOL.getReserveNormalizedIncome(_underlyingAsset));
   }
 
   /// @inheritdoc IAToken
@@ -250,7 +251,6 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
 
   /// @inheritdoc IAToken
   function rescueTokens(address token, address to, uint256 amount) external override onlyPoolAdmin {
-    require(token != _underlyingAsset, Errors.UNDERLYING_CANNOT_BE_RESCUED);
     IERC20(token).safeTransfer(to, amount);
   }
 
