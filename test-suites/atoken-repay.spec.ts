@@ -259,7 +259,7 @@ makeSuite('AToken: Repay', (testEnv: TestEnv) => {
       user.signer
     );
     const scaledTotalSupply = await variableDebtToken.scaledTotalSupply();
-    const variableDebt = scaledTotalSupply.rayMul(
+    const variableDebt = scaledTotalSupply.rayMulCeil(
       await pool.getReserveNormalizedVariableDebt(dai.address)
     );
 

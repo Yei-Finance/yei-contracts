@@ -39,6 +39,32 @@ library PercentageMath {
   }
 
   /**
+   * @notice Executes a percentage multiplication, rounding up
+   * @dev assembly optimized for improved gas savings
+   * @param value The value of which the percentage needs to be calculated
+   * @param percentage The percentage of the value to be calculated
+   * @return result value percentmul percentage, rounded up
+   */
+  function percentMulCeil(
+    uint256 value,
+    uint256 percentage
+  ) internal pure returns (uint256 result) {
+    // to avoid overflow, value <= (type(uint256).max - PERCENTAGE_FACTOR + 1) / percentage
+    assembly {
+      if iszero(
+        or(
+          iszero(percentage),
+          iszero(gt(value, div(sub(not(0), sub(PERCENTAGE_FACTOR, 1)), percentage)))
+        )
+      ) {
+        revert(0, 0)
+      }
+
+      result := div(add(mul(value, percentage), sub(PERCENTAGE_FACTOR, 1)), PERCENTAGE_FACTOR)
+    }
+  }
+
+  /**
    * @notice Executes a percentage division
    * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
    * @param value The value of which the percentage needs to be calculated

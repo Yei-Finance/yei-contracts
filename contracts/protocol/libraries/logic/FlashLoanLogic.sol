@@ -93,7 +93,7 @@ library FlashLoanLogic {
       vars.currentAmount = params.amounts[vars.i];
       vars.totalPremiums[vars.i] = DataTypes.InterestRateMode(params.interestRateModes[vars.i]) ==
         DataTypes.InterestRateMode.NONE
-        ? vars.currentAmount.percentMul(vars.flashloanPremiumTotal)
+        ? vars.currentAmount.percentMulCeil(vars.flashloanPremiumTotal)
         : 0;
       IAToken(reservesData[params.assets[vars.i]].aTokenAddress).transferUnderlyingTo(
         params.receiverAddress,
@@ -190,7 +190,7 @@ library FlashLoanLogic {
     ValidationLogic.validateFlashloanSimple(reserve);
 
     IFlashLoanSimpleReceiver receiver = IFlashLoanSimpleReceiver(params.receiverAddress);
-    uint256 totalPremium = params.amount.percentMul(params.flashLoanPremiumTotal);
+    uint256 totalPremium = params.amount.percentMulCeil(params.flashLoanPremiumTotal);
     IAToken(reserve.aTokenAddress).transferUnderlyingTo(params.receiverAddress, params.amount);
 
     require(
@@ -235,12 +235,12 @@ library FlashLoanLogic {
     reserve.updateState(reserveCache);
     reserveCache.nextLiquidityIndex = reserve.cumulateToLiquidityIndex(
       IERC20(reserveCache.aTokenAddress).totalSupply() +
-        uint256(reserve.accruedToTreasury).rayMul(reserveCache.nextLiquidityIndex),
+        uint256(reserve.accruedToTreasury).rayMulFloor(reserveCache.nextLiquidityIndex),
       premiumToLP
     );
 
     reserve.accruedToTreasury += premiumToProtocol
-      .rayDiv(reserveCache.nextLiquidityIndex)
+      .rayDivFloor(reserveCache.nextLiquidityIndex)
       .toUint128();
 
     reserve.updateInterestRates(reserveCache, params.asset, amountPlusPremium, 0);

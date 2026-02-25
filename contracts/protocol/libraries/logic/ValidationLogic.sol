@@ -81,7 +81,8 @@ library ValidationLogic {
     require(
       supplyCap == 0 ||
         ((IAToken(reserveCache.aTokenAddress).scaledTotalSupply() +
-          uint256(reserve.accruedToTreasury)).rayMul(reserveCache.nextLiquidityIndex) + amount) <=
+          uint256(reserve.accruedToTreasury)).rayMulFloor(reserveCache.nextLiquidityIndex) +
+          amount) <=
         supplyCap * (10 ** reserveCache.reserveConfiguration.getDecimals()),
       Errors.SUPPLY_CAP_EXCEEDED
     );
@@ -179,7 +180,7 @@ library ValidationLogic {
     }
 
     if (vars.borrowCap != 0) {
-      vars.totalSupplyVariableDebt = params.reserveCache.currScaledVariableDebt.rayMul(
+      vars.totalSupplyVariableDebt = params.reserveCache.currScaledVariableDebt.rayMulCeil(
         params.reserveCache.nextVariableBorrowIndex
       );
 

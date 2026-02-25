@@ -82,7 +82,9 @@ const getBalanceIncrease = (
   indexBeforeAction: BigNumber,
   indexAfterAction: BigNumber
 ) => {
-  return scaledBalance.rayMul(indexAfterAction).sub(scaledBalance.rayMul(indexBeforeAction));
+  return scaledBalance
+    .rayMulFloor(indexAfterAction)
+    .sub(scaledBalance.rayMulFloor(indexBeforeAction));
 };
 
 export const supply = async (
@@ -104,7 +106,7 @@ export const supply = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedIncome(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivFloor(indexAfter);
   const scaledBalance = (await aToken.scaledBalanceOf(onBehalfOf)).sub(addedScaledBalance);
   const balanceIncrease = getBalanceIncrease(scaledBalance, previousIndex, indexAfter);
 
@@ -144,7 +146,7 @@ export const withdraw = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedIncome(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivCeil(indexAfter);
   const scaledBalance = (await aToken.scaledBalanceOf(user.address)).add(addedScaledBalance);
   const balanceIncrease = getBalanceIncrease(scaledBalance, previousIndex, indexAfter);
 
@@ -201,7 +203,7 @@ export const transfer = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedIncome(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivCeil(indexAfter);
 
   // The amount of scaled balance transferred is 0 if self-transfer
   const deltaScaledBalance = user.address == to ? BigNumber.from(0) : addedScaledBalance;
@@ -267,7 +269,7 @@ export const transferFrom = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedIncome(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivCeil(indexAfter);
 
   // The amount of scaled balance transferred is 0 if self-transfer
   const deltaScaledBalance = origin == to ? BigNumber.from(0) : addedScaledBalance;
@@ -338,7 +340,7 @@ export const variableBorrow = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedVariableDebt(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivFloor(indexAfter);
   const scaledBalance = (await variableDebtToken.scaledBalanceOf(onBehalfOf)).sub(
     addedScaledBalance
   );
@@ -392,7 +394,7 @@ export const repayVariableBorrow = async (
     .withArgs(user.address, onBehalfOf, amount);
 
   const indexAfter = await pool.getReserveNormalizedVariableDebt(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivCeil(indexAfter);
   const scaledBalance = (await variableDebtToken.scaledBalanceOf(onBehalfOf)).add(
     addedScaledBalance
   );

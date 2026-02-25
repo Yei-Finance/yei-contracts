@@ -178,7 +178,7 @@ library ReserveLogic {
   ) internal {
     UpdateInterestRatesLocalVars memory vars;
 
-    vars.totalVariableDebt = reserveCache.nextScaledVariableDebt.rayMul(
+    vars.totalVariableDebt = reserveCache.nextScaledVariableDebt.rayMulCeil(
       reserveCache.nextVariableBorrowIndex
     );
 
@@ -240,12 +240,12 @@ library ReserveLogic {
     }
 
     //calculate the total variable debt at moment of the last interaction
-    vars.prevTotalVariableDebt = reserveCache.currScaledVariableDebt.rayMul(
+    vars.prevTotalVariableDebt = reserveCache.currScaledVariableDebt.rayMulCeil(
       reserveCache.currVariableBorrowIndex
     );
 
     //calculate the new total variable debt after accumulation of the interest on the index
-    vars.currTotalVariableDebt = reserveCache.currScaledVariableDebt.rayMul(
+    vars.currTotalVariableDebt = reserveCache.currScaledVariableDebt.rayMulCeil(
       reserveCache.nextVariableBorrowIndex
     );
 
@@ -272,7 +272,7 @@ library ReserveLogic {
     if (vars.amountToMint != 0) {
       reserve.accruedToTreasury += vars
         .amountToMint
-        .rayDiv(reserveCache.nextLiquidityIndex)
+        .rayDivFloor(reserveCache.nextLiquidityIndex)
         .toUint128();
     }
   }

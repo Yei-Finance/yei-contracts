@@ -100,7 +100,7 @@ library PoolLogic {
       if (accruedToTreasury != 0) {
         reserve.accruedToTreasury = 0;
         uint256 normalizedIncome = reserve.getNormalizedIncome();
-        uint256 amountToMint = accruedToTreasury.rayMul(normalizedIncome);
+        uint256 amountToMint = accruedToTreasury.rayMulFloor(normalizedIncome);
         IAToken(reserve.aTokenAddress).mintToTreasury(amountToMint, normalizedIncome);
 
         emit MintedToTreasury(assetAddress, amountToMint);
