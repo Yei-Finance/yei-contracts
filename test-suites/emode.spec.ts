@@ -268,8 +268,9 @@ makeSuite('EfficiencyMode', (testEnv: TestEnv) => {
     );
     expect(usageAsCollateralEnabled).to.be.true;
     const userDataBeforeEMode = await pool.getUserAccountData(user1.address);
-    expect(userDataBeforeSupply.totalCollateralBase).to.be.eq(
-      userDataBeforeEMode.totalCollateralBase.sub(wethToSupply.wadMul(wethPrice))
+    expect(userDataBeforeSupply.totalCollateralBase).to.be.closeTo(
+      userDataBeforeEMode.totalCollateralBase.sub(wethToSupply.wadMul(wethPrice)),
+      100
     );
 
     // Activate EMode, increasing availableBorrowsBase

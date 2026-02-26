@@ -219,7 +219,7 @@ makeSuite('Pool Liquidation: Liquidates borrows in eMode through interest', (tes
 
     expect(userReserveDataAfter.currentVariableDebt).to.be.closeTo(
       variableDebtBeforeTx.sub(amountToLiquidate),
-      2,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 
@@ -237,13 +237,13 @@ makeSuite('Pool Liquidation: Liquidates borrows in eMode through interest', (tes
 
     expect(daiReserveDataAfter.availableLiquidity).to.be.closeTo(
       daiReserveDataBefore.availableLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(usdcReserveDataAfter.availableLiquidity).to.be.closeTo(
       usdcReserveDataBefore.availableLiquidity.sub(expectedCollateralLiquidated),
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
   });

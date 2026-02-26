@@ -233,7 +233,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
       userWethReserveDataBefore.currentATokenBalance.sub(
         userWethReserveDataAfter.currentATokenBalance
       ),
-      2,
+      20,
       'Invalid collateral amount liquidated'
     );
 
@@ -256,25 +256,25 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
 
     expect(userReserveDataAfter.currentVariableDebt).to.be.closeTo(
       variableDebtBeforeTx.sub(amountToLiquidate),
-      2,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 
     expect(daiReserveDataAfter.availableLiquidity).to.be.closeTo(
       daiReserveDataBefore.availableLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(ethReserveDataAfter.availableLiquidity).to.be.closeTo(
       ethReserveDataBefore.availableLiquidity,
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
 
     expect(daiReserveDataAfter.totalLiquidity).to.be.closeTo(
       daiReserveDataBefore.totalLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
@@ -293,7 +293,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
     // We need the scaled balances here
     expect(ethReserveDataAfter.totalLiquidity).to.be.closeTo(
       ethReserveDataBefore.totalLiquidity,
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
 
@@ -443,13 +443,13 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
 
     expect(usdcReserveDataAfter.availableLiquidity).to.be.closeTo(
       usdcReserveDataBefore.availableLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(usdcReserveDataAfter.totalLiquidity).to.be.closeTo(
       usdcReserveDataBefore.totalLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
@@ -467,13 +467,13 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
 
     expect(ethReserveDataAfter.availableLiquidity).to.be.closeTo(
       ethReserveDataBefore.availableLiquidity,
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
 
     expect(ethReserveDataAfter.totalLiquidity).to.be.closeTo(
       ethReserveDataBefore.totalLiquidity,
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
   });

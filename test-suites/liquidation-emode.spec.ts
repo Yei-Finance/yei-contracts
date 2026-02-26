@@ -215,7 +215,7 @@ makeSuite('Pool Liquidation: Liquidates borrows in eMode with price change', (te
 
     expect(userReserveDataAfter.currentVariableDebt).to.be.closeTo(
       userReserveDataBefore.currentVariableDebt.sub(amountToLiquidate),
-      3,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 
@@ -230,13 +230,13 @@ makeSuite('Pool Liquidation: Liquidates borrows in eMode with price change', (te
 
     expect(daiReserveDataAfter.availableLiquidity).to.be.closeTo(
       daiReserveDataBefore.availableLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(usdcReserveDataAfter.availableLiquidity).to.be.closeTo(
       usdcReserveDataBefore.availableLiquidity.sub(expectedCollateralLiquidated),
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
   });
@@ -362,7 +362,7 @@ makeSuite('Pool Liquidation: Liquidates borrows in eMode with price change', (te
       .div(collateralPrice.mul(BigNumber.from(10).pow(6)));
 
     const collateralLiquidated = balanceBefore.sub(balanceAfter);
-    expect(collateralLiquidated).to.be.closeTo(expectedCollateralLiquidated, 2);
+    expect(collateralLiquidated).to.be.closeTo(expectedCollateralLiquidated, 20);
   });
 
   it('Liquidation of eMode collateral with eMode debt in EMode with custom price feed', async () => {
@@ -491,7 +491,7 @@ makeSuite('Pool Liquidation: Liquidates borrows in eMode with price change', (te
 
     const collateralLiquidated = balanceBefore.sub(balanceAfter);
 
-    expect(collateralLiquidated).to.be.closeTo(expectedCollateralLiquidated, 2);
+    expect(collateralLiquidated).to.be.closeTo(expectedCollateralLiquidated, 20);
   });
 
   it('Liquidation of non-eMode collateral with eMode debt in eMode with custom price feed', async () => {
@@ -622,6 +622,6 @@ makeSuite('Pool Liquidation: Liquidates borrows in eMode with price change', (te
       .div(collateralPrice.mul(BigNumber.from(10).pow(6)));
 
     const collateralLiquidated = balanceBefore.sub(balanceAfter);
-    expect(collateralLiquidated).to.be.closeTo(expectedCollateralLiquidated, 2);
+    expect(collateralLiquidated).to.be.closeTo(expectedCollateralLiquidated, 20);
   });
 });

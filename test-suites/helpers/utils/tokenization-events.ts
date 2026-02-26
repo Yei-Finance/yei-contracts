@@ -211,14 +211,18 @@ export const transfer = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedIncome(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivCeil(indexAfter);
 
   // The amount of scaled balance transferred is 0 if self-transfer
   const deltaScaledBalance = user.address == to ? BigNumber.from(0) : addedScaledBalance;
   const fromScaledBalance = (await aToken.scaledBalanceOf(user.address)).add(deltaScaledBalance);
   const toScaledBalance = (await aToken.scaledBalanceOf(to)).sub(deltaScaledBalance);
-  const fromBalanceIncrease = getBalanceIncrease(fromScaledBalance, fromPreviousIndex, indexAfter);
-  const toBalanceIncrease = getBalanceIncrease(toScaledBalance, toPreviousIndex, indexAfter);
+  const fromBalanceIncrease = getBalanceIncreaseFloor(
+    fromScaledBalance,
+    fromPreviousIndex,
+    indexAfter
+  );
+  const toBalanceIncrease = getBalanceIncreaseFloor(toScaledBalance, toPreviousIndex, indexAfter);
 
   if (debug) printATokenEvents(aToken, rcpt);
 
@@ -277,14 +281,18 @@ export const transferFrom = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedIncome(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivCeil(indexAfter);
 
   // The amount of scaled balance transferred is 0 if self-transfer
   const deltaScaledBalance = origin == to ? BigNumber.from(0) : addedScaledBalance;
   const fromScaledBalance = (await aToken.scaledBalanceOf(origin)).add(deltaScaledBalance);
   const toScaledBalance = (await aToken.scaledBalanceOf(to)).sub(deltaScaledBalance);
-  const fromBalanceIncrease = getBalanceIncrease(fromScaledBalance, fromPreviousIndex, indexAfter);
-  const toBalanceIncrease = getBalanceIncrease(toScaledBalance, toPreviousIndex, indexAfter);
+  const fromBalanceIncrease = getBalanceIncreaseFloor(
+    fromScaledBalance,
+    fromPreviousIndex,
+    indexAfter
+  );
+  const toBalanceIncrease = getBalanceIncreaseFloor(toScaledBalance, toPreviousIndex, indexAfter);
 
   if (debug) printATokenEvents(aToken, rcpt);
 
