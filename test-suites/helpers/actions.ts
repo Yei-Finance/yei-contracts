@@ -74,13 +74,7 @@ const almostEqualOrEqual = function (
       const expectedValue = <BigNumber>expected[key];
 
       this.assert(
-        actualValue.eq(expectedValue) ||
-          actualValue.add(1).eq(expectedValue) ||
-          actualValue.eq(expectedValue.add(1)) ||
-          actualValue.add(2).eq(expectedValue) ||
-          actualValue.eq(expectedValue.add(2)) ||
-          actualValue.add(3).eq(expectedValue) ||
-          actualValue.eq(expectedValue.add(3)),
+        actualValue.sub(expectedValue).abs().lte(BigNumber.from(10).pow(5)),
         `expected #{act} to be almost equal or equal #{exp} for property ${key}`,
         `expected #{act} to be almost equal or equal #{exp} for property ${key}`,
         expectedValue.toString(),

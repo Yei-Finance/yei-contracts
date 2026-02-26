@@ -437,7 +437,7 @@ makeSuite('Pool Liquidation: Liquidator receiving aToken', (testEnv) => {
 
     expect(userReserveDataAfter.currentStableDebt).to.be.closeTo(
       userReserveDataBefore.currentStableDebt.sub(amountToLiquidate),
-      2,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 

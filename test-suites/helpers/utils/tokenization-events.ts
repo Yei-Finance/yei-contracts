@@ -85,6 +85,16 @@ const getBalanceIncrease = (
   return scaledBalance.rayMul(indexAfterAction).sub(scaledBalance.rayMul(indexBeforeAction));
 };
 
+const getBalanceIncreaseFloor = (
+  scaledBalance: BigNumber,
+  indexBeforeAction: BigNumber,
+  indexAfterAction: BigNumber
+) => {
+  return scaledBalance
+    .rayMulFloor(indexAfterAction)
+    .sub(scaledBalance.rayMulFloor(indexBeforeAction));
+};
+
 export const supply = async (
   pool: Pool,
   user: SignerWithAddress,
@@ -104,9 +114,9 @@ export const supply = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedIncome(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivFloor(indexAfter);
   const scaledBalance = (await aToken.scaledBalanceOf(onBehalfOf)).sub(addedScaledBalance);
-  const balanceIncrease = getBalanceIncrease(scaledBalance, previousIndex, indexAfter);
+  const balanceIncrease = getBalanceIncreaseFloor(scaledBalance, previousIndex, indexAfter);
 
   if (debug) printATokenEvents(aToken, rcpt);
   matchEvent(rcpt, 'Transfer', underlyingToken, underlying, [user.address, aToken.address, amount]);
@@ -144,9 +154,9 @@ export const withdraw = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedIncome(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivCeil(indexAfter);
   const scaledBalance = (await aToken.scaledBalanceOf(user.address)).add(addedScaledBalance);
-  const balanceIncrease = getBalanceIncrease(scaledBalance, previousIndex, indexAfter);
+  const balanceIncrease = getBalanceIncreaseFloor(scaledBalance, previousIndex, indexAfter);
 
   if (debug) printATokenEvents(aToken, rcpt);
   matchEvent(rcpt, 'Transfer', underlyingToken, underlying, [aToken.address, to, amount]);
@@ -338,11 +348,11 @@ export const variableBorrow = async (
   const rcpt = await tx.wait();
 
   const indexAfter = await pool.getReserveNormalizedVariableDebt(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivFloor(indexAfter);
   const scaledBalance = (await variableDebtToken.scaledBalanceOf(onBehalfOf)).sub(
     addedScaledBalance
   );
-  const balanceIncrease = getBalanceIncrease(scaledBalance, previousIndex, indexAfter);
+  const balanceIncrease = getBalanceIncreaseFloor(scaledBalance, previousIndex, indexAfter);
 
   if (debug) printVariableDebtTokenEvents(variableDebtToken, rcpt);
 
@@ -392,11 +402,11 @@ export const repayVariableBorrow = async (
     .withArgs(user.address, onBehalfOf, amount);
 
   const indexAfter = await pool.getReserveNormalizedVariableDebt(underlying);
-  const addedScaledBalance = amount.rayDiv(indexAfter);
+  const addedScaledBalance = amount.rayDivCeil(indexAfter);
   const scaledBalance = (await variableDebtToken.scaledBalanceOf(onBehalfOf)).add(
     addedScaledBalance
   );
-  const balanceIncrease = getBalanceIncrease(scaledBalance, previousIndex, indexAfter);
+  const balanceIncrease = getBalanceIncreaseFloor(scaledBalance, previousIndex, indexAfter);
 
   if (debug) printVariableDebtTokenEvents(variableDebtToken, rcpt);
 

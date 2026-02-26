@@ -69,12 +69,12 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
     uint256 amount,
     uint256 index
   ) internal returns (bool) {
-    uint256 amountScaled = amount.rayDiv(index);
+    uint256 amountScaled = amount.rayDivFloor(index);
     require(amountScaled != 0, Errors.INVALID_MINT_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(onBehalfOf);
-    uint256 balanceIncrease = scaledBalance.rayMul(index) -
-      scaledBalance.rayMul(_userState[onBehalfOf].additionalData);
+    uint256 balanceIncrease = scaledBalance.rayMulFloor(index) -
+      scaledBalance.rayMulFloor(_userState[onBehalfOf].additionalData);
 
     _userState[onBehalfOf].additionalData = index.toUint128();
 
@@ -97,12 +97,19 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
    * @param index The variable debt index of the reserve
    */
   function _burnScaled(address user, address target, uint256 amount, uint256 index) internal {
-    uint256 amountScaled = amount.rayDiv(index);
+    uint256 amountScaled = amount.rayDivCeil(index);
     require(amountScaled != 0, Errors.INVALID_BURN_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(user);
-    uint256 balanceIncrease = scaledBalance.rayMul(index) -
-      scaledBalance.rayMul(_userState[user].additionalData);
+
+    // Cap amountScaled at user's balance to prevent underflow from ceil rounding overshoot
+    if (amountScaled > scaledBalance) {
+      require(scaledBalance != 0, Errors.INVALID_BURN_AMOUNT);
+      amountScaled = scaledBalance;
+    }
+
+    uint256 balanceIncrease = scaledBalance.rayMulFloor(index) -
+      scaledBalance.rayMulFloor(_userState[user].additionalData);
 
     _userState[user].additionalData = index.toUint128();
 
