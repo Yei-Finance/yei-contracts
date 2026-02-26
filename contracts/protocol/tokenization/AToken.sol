@@ -205,8 +205,8 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
 
     uint256 index = POOL.getReserveNormalizedIncome(underlyingAsset);
 
-    uint256 fromBalanceBefore = super.balanceOf(from).rayMul(index);
-    uint256 toBalanceBefore = super.balanceOf(to).rayMul(index);
+    uint256 fromBalanceBefore = super.balanceOf(from).rayMulFloor(index);
+    uint256 toBalanceBefore = super.balanceOf(to).rayMulFloor(index);
 
     super._transfer(from, to, amount, index);
 
@@ -214,7 +214,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
       POOL.finalizeTransfer(underlyingAsset, from, to, amount, fromBalanceBefore, toBalanceBefore);
     }
 
-    emit BalanceTransfer(from, to, amount.rayDiv(index), index);
+    emit BalanceTransfer(from, to, amount.rayDivCeil(index), index);
   }
 
   /**
