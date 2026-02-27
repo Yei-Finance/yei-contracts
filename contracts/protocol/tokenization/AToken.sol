@@ -6,7 +6,6 @@ import {GPv2SafeERC20} from '../../dependencies/gnosis/contracts/GPv2SafeERC20.s
 import {SafeCast} from '../../dependencies/openzeppelin/contracts/SafeCast.sol';
 import {VersionedInitializable} from '../libraries/aave-upgradeability/VersionedInitializable.sol';
 import {Errors} from '../libraries/helpers/Errors.sol';
-import {WadRayMath} from '../libraries/math/WadRayMath.sol';
 import {IPool} from '../../interfaces/IPool.sol';
 import {IAToken} from '../../interfaces/IAToken.sol';
 import {IAaveIncentivesController} from '../../interfaces/IAaveIncentivesController.sol';
@@ -22,7 +21,6 @@ import {EIP712Base} from './base/EIP712Base.sol';
  * @notice Implementation of the interest bearing token for the Aave protocol
  */
 contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, IAToken {
-  using WadRayMath for uint256;
   using SafeCast for uint256;
   using GPv2SafeERC20 for IERC20;
 
@@ -90,7 +88,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     uint256 amount,
     uint256 index
   ) external virtual override onlyPool returns (bool) {
-    uint256 amountScaled = amount.rayDivFloor(index);
+    uint256 amountScaled = TokenMath.getATokenMintScaledAmount(amount, index);
     return _mintScaled(caller, onBehalfOf, amountScaled, amount, index, TokenMath.getATokenBalance);
   }
 
@@ -101,7 +99,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     uint256 amount,
     uint256 index
   ) external virtual override onlyPool {
-    uint256 amountScaled = amount.rayDivCeil(index);
+    uint256 amountScaled = TokenMath.getATokenBurnScaledAmount(amount, index);
     _burnScaled(
       from,
       receiverOfUnderlying,
@@ -120,7 +118,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     if (amount == 0) {
       return;
     }
-    uint256 amountScaled = amount.rayDivFloor(index);
+    uint256 amountScaled = TokenMath.getATokenMintScaledAmount(amount, index);
     _mintScaled(address(POOL), _treasury, amountScaled, amount, index, TokenMath.getATokenBalance);
   }
 
@@ -139,7 +137,11 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
   function balanceOf(
     address user
   ) public view virtual override(IncentivizedERC20, IERC20) returns (uint256) {
-    return super.balanceOf(user).rayMulFloor(POOL.getReserveNormalizedIncome(_underlyingAsset));
+    return
+      TokenMath.getATokenBalance(
+        super.balanceOf(user),
+        POOL.getReserveNormalizedIncome(_underlyingAsset)
+      );
   }
 
   /// @inheritdoc IERC20
@@ -150,7 +152,11 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
       return 0;
     }
 
-    return currentSupplyScaled.rayMulFloor(POOL.getReserveNormalizedIncome(_underlyingAsset));
+    return
+      TokenMath.getATokenBalance(
+        currentSupplyScaled,
+        POOL.getReserveNormalizedIncome(_underlyingAsset)
+      );
   }
 
   /// @inheritdoc IAToken
@@ -216,16 +222,16 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
 
     uint256 index = POOL.getReserveNormalizedIncome(underlyingAsset);
 
-    uint256 fromBalanceBefore = super.balanceOf(from).rayMulFloor(index);
-    uint256 toBalanceBefore = super.balanceOf(to).rayMulFloor(index);
+    uint256 fromBalanceBefore = TokenMath.getATokenBalance(super.balanceOf(from), index);
+    uint256 toBalanceBefore = TokenMath.getATokenBalance(super.balanceOf(to), index);
 
-    super._transfer(from, to, amount, index);
+    uint256 amountScaled = super._transfer(from, to, amount, index);
 
     if (validate) {
       POOL.finalizeTransfer(underlyingAsset, from, to, amount, fromBalanceBefore, toBalanceBefore);
     }
 
-    emit BalanceTransfer(from, to, amount.rayDivCeil(index), index);
+    emit BalanceTransfer(from, to, amountScaled, index);
   }
 
   /**

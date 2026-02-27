@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 
 import {SafeCast} from '../../../dependencies/openzeppelin/contracts/SafeCast.sol';
 import {Errors} from '../../libraries/helpers/Errors.sol';
-import {WadRayMath} from '../../libraries/math/WadRayMath.sol';
+import {TokenMath} from '../../libraries/helpers/TokenMath.sol';
 import {IPool} from '../../../interfaces/IPool.sol';
 import {IScaledBalanceToken} from '../../../interfaces/IScaledBalanceToken.sol';
 import {MintableIncentivizedERC20} from './MintableIncentivizedERC20.sol';
@@ -14,7 +14,6 @@ import {MintableIncentivizedERC20} from './MintableIncentivizedERC20.sol';
  * @notice Basic ERC20 implementation of scaled balance token
  */
 abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBalanceToken {
-  using WadRayMath for uint256;
   using SafeCast for uint256;
 
   /**
@@ -146,20 +145,27 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
    * @param recipient The destination address
    * @param amount The amount getting transferred
    * @param index The next liquidity index of the reserve
+   * @return amountScaled The actual scaled amount transferred (may be less than floor(amount/index)
+   *   if the sender's balance is the binding constraint)
    */
-  function _transfer(address sender, address recipient, uint256 amount, uint256 index) internal {
+  function _transfer(
+    address sender,
+    address recipient,
+    uint256 amount,
+    uint256 index
+  ) internal returns (uint256 amountScaled) {
     uint256 senderScaledBalance = super.balanceOf(sender);
-    uint256 senderBalanceIncrease = senderScaledBalance.rayMulFloor(index) -
-      senderScaledBalance.rayMulFloor(_userState[sender].additionalData);
+    uint256 senderBalanceIncrease = TokenMath.getATokenBalance(senderScaledBalance, index) -
+      TokenMath.getATokenBalance(senderScaledBalance, _userState[sender].additionalData);
 
     uint256 recipientScaledBalance = super.balanceOf(recipient);
-    uint256 recipientBalanceIncrease = recipientScaledBalance.rayMulFloor(index) -
-      recipientScaledBalance.rayMulFloor(_userState[recipient].additionalData);
+    uint256 recipientBalanceIncrease = TokenMath.getATokenBalance(recipientScaledBalance, index) -
+      TokenMath.getATokenBalance(recipientScaledBalance, _userState[recipient].additionalData);
 
     _userState[sender].additionalData = index.toUint128();
     _userState[recipient].additionalData = index.toUint128();
 
-    uint256 amountScaled = amount.rayDivCeil(index);
+    amountScaled = TokenMath.getATokenTransferScaledAmount(amount, index);
     if (amountScaled > senderScaledBalance) {
       amountScaled = senderScaledBalance;
     }

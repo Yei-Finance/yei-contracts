@@ -4,7 +4,6 @@ pragma solidity ^0.8.10;
 import {IERC20} from '../../dependencies/openzeppelin/contracts/IERC20.sol';
 import {SafeCast} from '../../dependencies/openzeppelin/contracts/SafeCast.sol';
 import {VersionedInitializable} from '../libraries/aave-upgradeability/VersionedInitializable.sol';
-import {WadRayMath} from '../libraries/math/WadRayMath.sol';
 import {Errors} from '../libraries/helpers/Errors.sol';
 import {IPool} from '../../interfaces/IPool.sol';
 import {IAaveIncentivesController} from '../../interfaces/IAaveIncentivesController.sol';
@@ -23,7 +22,6 @@ import {TokenMath} from '../libraries/helpers/TokenMath.sol';
  * @dev Transfer and approve functionalities are disabled since its a non-transferable token
  */
 contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDebtToken {
-  using WadRayMath for uint256;
   using SafeCast for uint256;
 
   uint256 public constant DEBT_TOKEN_REVISION = 0x1;
@@ -85,7 +83,11 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
       return 0;
     }
 
-    return scaledBalance.rayMul(POOL.getReserveNormalizedVariableDebt(_underlyingAsset));
+    return
+      TokenMath.getVTokenBalance(
+        scaledBalance,
+        POOL.getReserveNormalizedVariableDebt(_underlyingAsset)
+      );
   }
 
   /// @inheritdoc IVariableDebtToken
@@ -98,7 +100,7 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     if (user != onBehalfOf) {
       _decreaseBorrowAllowance(onBehalfOf, user, amount);
     }
-    uint256 amountScaled = amount.rayDivCeil(index);
+    uint256 amountScaled = TokenMath.getVTokenMintScaledAmount(amount, index);
     return (
       _mintScaled(user, onBehalfOf, amountScaled, amount, index, TokenMath.getVTokenBalance),
       scaledTotalSupply()
@@ -111,12 +113,9 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     uint256 amount,
     uint256 index
   ) external virtual override onlyPool returns (uint256) {
-    uint256 amountScaled = amount.rayDivFloor(index);
-    // floor can produce zero for dust amounts (amount < index/RAY).
-    // If the caller has no debt this is a harmless no-op; otherwise revert so
-    // the pool is not silently charged underlying without reducing scaled debt.
+    uint256 amountScaled = TokenMath.getVTokenBurnScaledAmount(amount, index);
+    // floor can produce zero for dust amounts (amount < index/RAY); treat as a no-op.
     if (amountScaled == 0) {
-      require(super.balanceOf(from) == 0, Errors.INVALID_BURN_AMOUNT);
       return scaledTotalSupply();
     }
     _burnScaled(from, address(0), amountScaled, amount, index, TokenMath.getVTokenBalance);
@@ -125,7 +124,11 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
 
   /// @inheritdoc IERC20
   function totalSupply() public view virtual override returns (uint256) {
-    return super.totalSupply().rayMul(POOL.getReserveNormalizedVariableDebt(_underlyingAsset));
+    return
+      TokenMath.getVTokenBalance(
+        super.totalSupply(),
+        POOL.getReserveNormalizedVariableDebt(_underlyingAsset)
+      );
   }
 
   /// @inheritdoc EIP712Base
