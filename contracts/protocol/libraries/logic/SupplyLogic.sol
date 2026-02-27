@@ -20,6 +20,7 @@ import {TokenMath} from '../helpers/TokenMath.sol';
  * @notice Implements the base logic for supply/withdraw
  */
 library SupplyLogic {
+  using TokenMath for uint256;
   using ReserveLogic for DataTypes.ReserveCache;
   using ReserveLogic for DataTypes.ReserveData;
   using GPv2SafeERC20 for IERC20;
@@ -116,10 +117,9 @@ library SupplyLogic {
 
     reserve.updateState(reserveCache);
 
-    uint256 userBalance = TokenMath.getATokenBalance(
-      IAToken(reserveCache.aTokenAddress).scaledBalanceOf(msg.sender),
-      reserveCache.nextLiquidityIndex
-    );
+    uint256 userBalance = IAToken(reserveCache.aTokenAddress)
+      .scaledBalanceOf(msg.sender)
+      .getATokenBalance(reserveCache.nextLiquidityIndex);
 
     uint256 amountToWithdraw = params.amount;
 

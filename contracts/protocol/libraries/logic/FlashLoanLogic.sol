@@ -13,6 +13,7 @@ import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
 import {Errors} from '../helpers/Errors.sol';
 import {WadRayMath} from '../math/WadRayMath.sol';
 import {PercentageMath} from '../math/PercentageMath.sol';
+import {TokenMath} from '../helpers/TokenMath.sol';
 import {DataTypes} from '../types/DataTypes.sol';
 import {ValidationLogic} from './ValidationLogic.sol';
 import {BorrowLogic} from './BorrowLogic.sol';
@@ -235,12 +236,12 @@ library FlashLoanLogic {
     reserve.updateState(reserveCache);
     reserveCache.nextLiquidityIndex = reserve.cumulateToLiquidityIndex(
       IERC20(reserveCache.aTokenAddress).totalSupply() +
-        uint256(reserve.accruedToTreasury).rayMul(reserveCache.nextLiquidityIndex),
+        TokenMath.getATokenBalance(reserve.accruedToTreasury, reserveCache.nextLiquidityIndex),
       premiumToLP
     );
 
-    reserve.accruedToTreasury += premiumToProtocol
-      .rayDiv(reserveCache.nextLiquidityIndex)
+    reserve.accruedToTreasury += TokenMath
+      .getATokenMintScaledAmount(premiumToProtocol, reserveCache.nextLiquidityIndex)
       .toUint128();
 
     reserve.updateInterestRates(reserveCache, params.asset, amountPlusPremium, 0);

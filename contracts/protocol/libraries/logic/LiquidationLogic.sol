@@ -18,6 +18,7 @@ import {IAToken} from '../../../interfaces/IAToken.sol';
 import {IStableDebtToken} from '../../../interfaces/IStableDebtToken.sol';
 import {IVariableDebtToken} from '../../../interfaces/IVariableDebtToken.sol';
 import {IPriceOracleGetter} from '../../../interfaces/IPriceOracleGetter.sol';
+import {TokenMath} from '../helpers/TokenMath.sol';
 
 /**
  * @title LiquidationLogic library
@@ -211,13 +212,19 @@ library LiquidationLogic {
     // Transfer fee to treasury if it is non-zero
     if (vars.liquidationProtocolFeeAmount != 0) {
       uint256 liquidityIndex = collateralReserve.getNormalizedIncome();
-      uint256 scaledDownLiquidationProtocolFee = vars.liquidationProtocolFeeAmount.rayDiv(
+      uint256 scaledDownUserBalance = vars.collateralAToken.scaledBalanceOf(params.user);
+      // Use rayDivCeil to match the ceil rounding applied by transferOnLiquidation, so the
+      // guard never misses an overshoot by 1 scaled unit. Cap using rayMulFloor so the
+      // resulting fee amount ceil-divides back to exactly scaledDownUserBalance.
+      uint256 scaledDownLiquidationProtocolFee = TokenMath.getATokenBurnScaledAmount(
+        vars.liquidationProtocolFeeAmount,
         liquidityIndex
       );
-      uint256 scaledDownUserBalance = vars.collateralAToken.scaledBalanceOf(params.user);
-      // To avoid trying to send more aTokens than available on balance, due to 1 wei imprecision
       if (scaledDownLiquidationProtocolFee > scaledDownUserBalance) {
-        vars.liquidationProtocolFeeAmount = scaledDownUserBalance.rayMul(liquidityIndex);
+        vars.liquidationProtocolFeeAmount = TokenMath.getATokenBalance(
+          scaledDownUserBalance,
+          liquidityIndex
+        );
       }
       vars.collateralAToken.transferOnLiquidation(
         params.user,
