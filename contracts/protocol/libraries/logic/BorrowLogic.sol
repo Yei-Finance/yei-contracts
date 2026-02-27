@@ -242,12 +242,13 @@ library BorrowLogic {
       if (ceilPayback > paybackAmount) paybackAmount = ceilPayback;
     }
 
+    bool noMoreVariableDebt;
     if (params.interestRateMode == DataTypes.InterestRateMode.STABLE) {
       (reserveCache.nextTotalStableDebt, reserveCache.nextAvgStableBorrowRate) = IStableDebtToken(
         reserveCache.stableDebtTokenAddress
       ).burn(params.onBehalfOf, paybackAmount);
     } else {
-      reserveCache.nextScaledVariableDebt = IVariableDebtToken(
+      (noMoreVariableDebt, reserveCache.nextScaledVariableDebt) = IVariableDebtToken(
         reserveCache.variableDebtTokenAddress
       ).burn(params.onBehalfOf, paybackAmount, reserveCache.nextVariableBorrowIndex);
     }
@@ -259,7 +260,11 @@ library BorrowLogic {
       0
     );
 
-    if (stableDebt + variableDebt - paybackAmount == 0) {
+    if (
+      params.interestRateMode == DataTypes.InterestRateMode.VARIABLE
+        ? noMoreVariableDebt && stableDebt == 0
+        : stableDebt + variableDebt - paybackAmount == 0
+    ) {
       userConfig.setBorrowing(reserve.id, false);
     }
 
@@ -365,7 +370,7 @@ library BorrowLogic {
         reserveCache.variableDebtTokenAddress
       ).mint(msg.sender, msg.sender, stableDebt, reserveCache.nextVariableBorrowIndex);
     } else {
-      reserveCache.nextScaledVariableDebt = IVariableDebtToken(
+      (, reserveCache.nextScaledVariableDebt) = IVariableDebtToken(
         reserveCache.variableDebtTokenAddress
       ).burn(msg.sender, variableDebt, reserveCache.nextVariableBorrowIndex);
 

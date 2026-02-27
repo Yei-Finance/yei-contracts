@@ -112,10 +112,17 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     address from,
     uint256 amount,
     uint256 index
-  ) external virtual override onlyPool returns (uint256) {
+  ) external virtual override onlyPool returns (bool, uint256) {
     uint256 amountScaled = TokenMath.getVTokenBurnScaledAmount(amount, index);
-    _burnScaled(from, address(0), amountScaled, amount, index, TokenMath.getVTokenBalance);
-    return scaledTotalSupply();
+    bool noMoreDebt = _burnScaled(
+      from,
+      address(0),
+      amountScaled,
+      amount,
+      index,
+      TokenMath.getVTokenBalance
+    );
+    return (noMoreDebt, scaledTotalSupply());
   }
 
   /// @inheritdoc IERC20

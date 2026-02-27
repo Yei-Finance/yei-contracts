@@ -107,7 +107,7 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
     uint256 amount,
     uint256 index,
     function(uint256, uint256) internal pure returns (uint256) getTokenBalance
-  ) internal {
+  ) internal returns (bool) {
     require(amountScaled != 0, Errors.INVALID_BURN_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(user);
@@ -128,6 +128,8 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
       emit Transfer(user, address(0), amountToBurn);
       emit Burn(user, target, amountToBurn, balanceIncrease, index);
     }
+
+    return scaledBalance - amountScaled == 0;
   }
 
   /**

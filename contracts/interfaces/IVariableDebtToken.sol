@@ -34,9 +34,10 @@ interface IVariableDebtToken is IScaledBalanceToken, IInitializableDebtToken {
    * @param from The address from which the debt will be burned
    * @param amount The amount getting burned
    * @param index The variable debt index of the reserve
+   * @return True if the user has no more variable debt after the burn
    * @return The scaled total debt of the reserve
    */
-  function burn(address from, uint256 amount, uint256 index) external returns (uint256);
+  function burn(address from, uint256 amount, uint256 index) external returns (bool, uint256);
 
   /**
    * @notice Returns the address of the underlying asset of this debtToken (E.g. WETH for variableDebtWETH)
