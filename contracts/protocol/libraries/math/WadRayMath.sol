@@ -109,6 +109,22 @@ library WadRayMath {
   }
 
   /**
+   * @notice Multiplies two ray, rounding up to the nearest ray
+   * @param a Ray
+   * @param b Ray
+   * @return c = a*b/RAY, rounded up
+   */
+  function rayMulCeil(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= (type(uint256).max - (RAY - 1)) / b
+    assembly {
+      if iszero(or(iszero(b), iszero(gt(a, div(sub(not(0), sub(RAY, 1)), b))))) {
+        revert(0, 0)
+      }
+      c := div(add(mul(a, b), sub(RAY, 1)), RAY)
+    }
+  }
+
+  /**
    * @notice Divides two ray, rounding down to the nearest ray
    * @param a Ray
    * @param b Ray

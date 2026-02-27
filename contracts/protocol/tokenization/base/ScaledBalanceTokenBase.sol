@@ -59,22 +59,25 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
    * @notice Implements the basic logic to mint a scaled balance token.
    * @param caller The address performing the mint
    * @param onBehalfOf The address of the user that will receive the scaled tokens
-   * @param amount The amount of tokens getting minted
+   * @param amountScaled The pre-computed scaled amount of tokens getting minted
+   * @param amount The raw underlying amount, used for accurate event emission
    * @param index The next liquidity index of the reserve
+   * @param getTokenBalance Function pointer to compute token balance from scaled amount and index
    * @return `true` if the the previous balance of the user was 0
    */
   function _mintScaled(
     address caller,
     address onBehalfOf,
+    uint256 amountScaled,
     uint256 amount,
-    uint256 index
+    uint256 index,
+    function(uint256, uint256) internal pure returns (uint256) getTokenBalance
   ) internal returns (bool) {
-    uint256 amountScaled = amount.rayDivFloor(index);
     require(amountScaled != 0, Errors.INVALID_MINT_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(onBehalfOf);
-    uint256 balanceIncrease = scaledBalance.rayMulFloor(index) -
-      scaledBalance.rayMulFloor(_userState[onBehalfOf].additionalData);
+    uint256 balanceIncrease = getTokenBalance(scaledBalance, index) -
+      getTokenBalance(scaledBalance, _userState[onBehalfOf].additionalData);
 
     _userState[onBehalfOf].additionalData = index.toUint128();
 
@@ -93,23 +96,33 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
    * if the amount to burn is less than the interest that the user accrued
    * @param user The user which debt is burnt
    * @param target The address that will receive the underlying, if any
-   * @param amount The amount getting burned
+   * @param amountScaled The pre-computed scaled amount getting burned
+   * @param amount The raw underlying amount, used for accurate event emission
    * @param index The variable debt index of the reserve
+   * @param getTokenBalance Function pointer to compute token balance from scaled amount and index
    */
-  function _burnScaled(address user, address target, uint256 amount, uint256 index) internal {
-    uint256 amountScaled = amount.rayDivCeil(index);
+  function _burnScaled(
+    address user,
+    address target,
+    uint256 amountScaled,
+    uint256 amount,
+    uint256 index,
+    function(uint256, uint256) internal pure returns (uint256) getTokenBalance
+  ) internal {
     require(amountScaled != 0, Errors.INVALID_BURN_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(user);
 
-    // Cap amountScaled at user's balance to prevent underflow from ceil rounding overshoot
+    // Cap amountScaled at user's balance to prevent underflow from ceil rounding overshoot.
+    // When capped, recompute amount so events reflect what is actually being burned.
     if (amountScaled > scaledBalance) {
       require(scaledBalance != 0, Errors.INVALID_BURN_AMOUNT);
       amountScaled = scaledBalance;
+      amount = getTokenBalance(scaledBalance, index);
     }
 
-    uint256 balanceIncrease = scaledBalance.rayMulFloor(index) -
-      scaledBalance.rayMulFloor(_userState[user].additionalData);
+    uint256 balanceIncrease = getTokenBalance(scaledBalance, index) -
+      getTokenBalance(scaledBalance, _userState[user].additionalData);
 
     _userState[user].additionalData = index.toUint128();
 

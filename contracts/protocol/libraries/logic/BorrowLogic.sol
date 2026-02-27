@@ -14,6 +14,7 @@ import {DataTypes} from '../types/DataTypes.sol';
 import {ValidationLogic} from './ValidationLogic.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
 import {IsolationModeLogic} from './IsolationModeLogic.sol';
+import {TokenMath} from '../helpers/TokenMath.sol';
 
 /**
  * @title BorrowLogic library
@@ -205,6 +206,9 @@ library BorrowLogic {
       ? stableDebt
       : variableDebt;
 
+    // Capture before params.amount is potentially overwritten by the aToken branch below.
+    bool isMaxRepay = params.amount == type(uint256).max;
+
     // Allows a user to repay with aTokens without leaving dust from interest.
     if (params.useATokens && params.amount == type(uint256).max) {
       params.amount = IAToken(reserveCache.aTokenAddress).balanceOf(msg.sender);
@@ -212,6 +216,24 @@ library BorrowLogic {
 
     if (params.amount < paybackAmount) {
       paybackAmount = params.amount;
+    }
+
+    // For a max variable-debt repay, use ceiling multiplication so the payback amount
+    // always floor-divides back to a non-zero scaled unit. rayMul (half-up) rounds down
+    // when the fractional part of (scaledDebt * index) is < 0.5 RAY, which can strand a
+    // 1-wei scaled position that the user cannot close through any other path.
+    if (
+      isMaxRepay &&
+      !params.useATokens &&
+      params.interestRateMode == DataTypes.InterestRateMode.VARIABLE
+    ) {
+      uint256 scaledVariableDebt = IVariableDebtToken(reserveCache.variableDebtTokenAddress)
+        .scaledBalanceOf(params.onBehalfOf);
+      uint256 ceilPayback = TokenMath.getVTokenBalance(
+        scaledVariableDebt,
+        reserveCache.nextVariableBorrowIndex
+      );
+      if (ceilPayback > paybackAmount) paybackAmount = ceilPayback;
     }
 
     if (params.interestRateMode == DataTypes.InterestRateMode.STABLE) {

@@ -12,6 +12,7 @@ import {IAToken} from '../../interfaces/IAToken.sol';
 import {IAaveIncentivesController} from '../../interfaces/IAaveIncentivesController.sol';
 import {IInitializableAToken} from '../../interfaces/IInitializableAToken.sol';
 import {ScaledBalanceTokenBase} from './base/ScaledBalanceTokenBase.sol';
+import {TokenMath} from '../libraries/helpers/TokenMath.sol';
 import {IncentivizedERC20} from './base/IncentivizedERC20.sol';
 import {EIP712Base} from './base/EIP712Base.sol';
 
@@ -89,7 +90,8 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     uint256 amount,
     uint256 index
   ) external virtual override onlyPool returns (bool) {
-    return _mintScaled(caller, onBehalfOf, amount, index);
+    uint256 amountScaled = amount.rayDivFloor(index);
+    return _mintScaled(caller, onBehalfOf, amountScaled, amount, index, TokenMath.getATokenBalance);
   }
 
   /// @inheritdoc IAToken
@@ -99,7 +101,15 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     uint256 amount,
     uint256 index
   ) external virtual override onlyPool {
-    _burnScaled(from, receiverOfUnderlying, amount, index);
+    uint256 amountScaled = amount.rayDivCeil(index);
+    _burnScaled(
+      from,
+      receiverOfUnderlying,
+      amountScaled,
+      amount,
+      index,
+      TokenMath.getATokenBalance
+    );
     if (receiverOfUnderlying != address(this)) {
       IERC20(_underlyingAsset).safeTransfer(receiverOfUnderlying, amount);
     }
@@ -110,7 +120,8 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     if (amount == 0) {
       return;
     }
-    _mintScaled(address(POOL), _treasury, amount, index);
+    uint256 amountScaled = amount.rayDivFloor(index);
+    _mintScaled(address(POOL), _treasury, amountScaled, amount, index, TokenMath.getATokenBalance);
   }
 
   /// @inheritdoc IAToken

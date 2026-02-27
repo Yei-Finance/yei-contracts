@@ -13,6 +13,7 @@ import {IVariableDebtToken} from '../../interfaces/IVariableDebtToken.sol';
 import {EIP712Base} from './base/EIP712Base.sol';
 import {DebtTokenBase} from './base/DebtTokenBase.sol';
 import {ScaledBalanceTokenBase} from './base/ScaledBalanceTokenBase.sol';
+import {TokenMath} from '../libraries/helpers/TokenMath.sol';
 
 /**
  * @title VariableDebtToken
@@ -97,7 +98,11 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     if (user != onBehalfOf) {
       _decreaseBorrowAllowance(onBehalfOf, user, amount);
     }
-    return (_mintScaled(user, onBehalfOf, amount, index), scaledTotalSupply());
+    uint256 amountScaled = amount.rayDivCeil(index);
+    return (
+      _mintScaled(user, onBehalfOf, amountScaled, amount, index, TokenMath.getVTokenBalance),
+      scaledTotalSupply()
+    );
   }
 
   /// @inheritdoc IVariableDebtToken
@@ -106,7 +111,15 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     uint256 amount,
     uint256 index
   ) external virtual override onlyPool returns (uint256) {
-    _burnScaled(from, address(0), amount, index);
+    uint256 amountScaled = amount.rayDivFloor(index);
+    // floor can produce zero for dust amounts (amount < index/RAY).
+    // If the caller has no debt this is a harmless no-op; otherwise revert so
+    // the pool is not silently charged underlying without reducing scaled debt.
+    if (amountScaled == 0) {
+      require(super.balanceOf(from) == 0, Errors.INVALID_BURN_AMOUNT);
+      return scaledTotalSupply();
+    }
+    _burnScaled(from, address(0), amountScaled, amount, index, TokenMath.getVTokenBalance);
     return scaledTotalSupply();
   }
 
