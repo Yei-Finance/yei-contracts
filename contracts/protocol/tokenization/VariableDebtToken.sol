@@ -114,10 +114,6 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     uint256 index
   ) external virtual override onlyPool returns (uint256) {
     uint256 amountScaled = TokenMath.getVTokenBurnScaledAmount(amount, index);
-    // floor can produce zero for dust amounts (amount < index/RAY); treat as a no-op.
-    if (amountScaled == 0) {
-      return scaledTotalSupply();
-    }
     _burnScaled(from, address(0), amountScaled, amount, index, TokenMath.getVTokenBalance);
     return scaledTotalSupply();
   }

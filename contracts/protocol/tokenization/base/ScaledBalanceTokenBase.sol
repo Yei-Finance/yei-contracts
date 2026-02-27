@@ -112,14 +112,6 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
 
     uint256 scaledBalance = super.balanceOf(user);
 
-    // Cap amountScaled at user's balance to prevent underflow from ceil rounding overshoot.
-    // When capped, recompute amount so events reflect what is actually being burned.
-    if (amountScaled > scaledBalance) {
-      require(scaledBalance != 0, Errors.INVALID_BURN_AMOUNT);
-      amountScaled = scaledBalance;
-      amount = getTokenBalance(scaledBalance, index);
-    }
-
     uint256 balanceIncrease = getTokenBalance(scaledBalance, index) -
       getTokenBalance(scaledBalance, _userState[user].additionalData);
 
