@@ -12,6 +12,7 @@ import {PercentageMath} from '../math/PercentageMath.sol';
 import {ValidationLogic} from './ValidationLogic.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
 import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
+import {TokenMath} from '../helpers/TokenMath.sol';
 
 /**
  * @title SupplyLogic library
@@ -115,9 +116,10 @@ library SupplyLogic {
 
     reserve.updateState(reserveCache);
 
-    uint256 userBalance = IAToken(reserveCache.aTokenAddress)
-      .scaledBalanceOf(msg.sender)
-      .rayMulFloor(reserveCache.nextLiquidityIndex);
+    uint256 userBalance = TokenMath.getATokenBalance(
+      IAToken(reserveCache.aTokenAddress).scaledBalanceOf(msg.sender),
+      reserveCache.nextLiquidityIndex
+    );
 
     uint256 amountToWithdraw = params.amount;
 
