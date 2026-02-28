@@ -14,7 +14,6 @@ import {DataTypes} from '../types/DataTypes.sol';
 import {ValidationLogic} from './ValidationLogic.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
 import {IsolationModeLogic} from './IsolationModeLogic.sol';
-import {TokenMath} from '../helpers/TokenMath.sol';
 
 /**
  * @title BorrowLogic library
@@ -206,9 +205,6 @@ library BorrowLogic {
       ? stableDebt
       : variableDebt;
 
-    // Capture before params.amount is potentially overwritten by the aToken branch below.
-    bool isMaxRepay = params.amount == type(uint256).max;
-
     // Allows a user to repay with aTokens without leaving dust from interest.
     if (params.useATokens && params.amount == type(uint256).max) {
       params.amount = IAToken(reserveCache.aTokenAddress).balanceOf(msg.sender);
@@ -216,30 +212,6 @@ library BorrowLogic {
 
     if (params.amount < paybackAmount) {
       paybackAmount = params.amount;
-    }
-
-    // For a max variable-debt repay, use ceiling multiplication so the payback amount
-    // always floor-divides back to a non-zero scaled unit. rayMul (half-up) rounds down
-    // when the fractional part of (scaledDebt * index) is < 0.5 RAY, which can strand a
-    // 1-wei scaled position that the user cannot close through any other path.
-    if (isMaxRepay && params.interestRateMode == DataTypes.InterestRateMode.VARIABLE) {
-      uint256 scaledVariableDebt = IVariableDebtToken(reserveCache.variableDebtTokenAddress)
-        .scaledBalanceOf(params.onBehalfOf);
-      uint256 ceilPayback = TokenMath.getVTokenBalance(
-        scaledVariableDebt,
-        reserveCache.nextVariableBorrowIndex
-      );
-      if (params.useATokens) {
-        // Cap to the caller's aToken balance; can't burn more aTokens than the user holds.
-        uint256 aTokenBalance = IAToken(reserveCache.aTokenAddress).balanceOf(msg.sender);
-        if (ceilPayback > aTokenBalance) ceilPayback = aTokenBalance;
-      } else {
-        // Cap to the caller's wallet balance so safeTransferFrom never reverts due to
-        // the ceiling being 1 wei above what the user approved or holds.
-        uint256 callerBalance = IERC20(params.asset).balanceOf(msg.sender);
-        if (ceilPayback > callerBalance) ceilPayback = callerBalance;
-      }
-      if (ceilPayback > paybackAmount) paybackAmount = ceilPayback;
     }
 
     bool noMoreVariableDebt;
