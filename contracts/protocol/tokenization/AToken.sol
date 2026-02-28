@@ -89,7 +89,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     uint256 index
   ) external virtual override onlyPool returns (bool) {
     uint256 amountScaled = TokenMath.getATokenMintScaledAmount(amount, index);
-    return _mintScaled(caller, onBehalfOf, amountScaled, amount, index, TokenMath.getATokenBalance);
+    return _mintScaled(caller, onBehalfOf, amountScaled, index, TokenMath.getATokenBalance);
   }
 
   /// @inheritdoc IAToken
@@ -100,14 +100,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     uint256 index
   ) external virtual override onlyPool {
     uint256 amountScaled = TokenMath.getATokenBurnScaledAmount(amount, index);
-    _burnScaled(
-      from,
-      receiverOfUnderlying,
-      amountScaled,
-      amount,
-      index,
-      TokenMath.getATokenBalance
-    );
+    _burnScaled(from, receiverOfUnderlying, amountScaled, index, TokenMath.getATokenBalance);
     if (receiverOfUnderlying != address(this)) {
       IERC20(_underlyingAsset).safeTransfer(receiverOfUnderlying, amount);
     }
@@ -119,7 +112,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
       return;
     }
     uint256 amountScaled = TokenMath.getATokenMintScaledAmount(amount, index);
-    _mintScaled(address(POOL), _treasury, amountScaled, amount, index, TokenMath.getATokenBalance);
+    _mintScaled(address(POOL), _treasury, amountScaled, index, TokenMath.getATokenBalance);
   }
 
   /// @inheritdoc IAToken

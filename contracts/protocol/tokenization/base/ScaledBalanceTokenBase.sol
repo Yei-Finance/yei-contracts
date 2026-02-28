@@ -59,7 +59,6 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
    * @param caller The address performing the mint
    * @param onBehalfOf The address of the user that will receive the scaled tokens
    * @param amountScaled The pre-computed scaled amount of tokens getting minted
-   * @param amount The raw underlying amount, used for accurate event emission
    * @param index The next liquidity index of the reserve
    * @param getTokenBalance Function pointer to compute token balance from scaled amount and index
    * @return `true` if the the previous balance of the user was 0
@@ -68,21 +67,20 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
     address caller,
     address onBehalfOf,
     uint256 amountScaled,
-    uint256 amount,
     uint256 index,
     function(uint256, uint256) internal pure returns (uint256) getTokenBalance
   ) internal returns (bool) {
     require(amountScaled != 0, Errors.INVALID_MINT_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(onBehalfOf);
-    uint256 balanceIncrease = getTokenBalance(scaledBalance, index) -
-      getTokenBalance(scaledBalance, _userState[onBehalfOf].additionalData);
+    uint256 previousBalance = getTokenBalance(scaledBalance, _userState[onBehalfOf].additionalData);
+    uint256 balanceIncrease = getTokenBalance(scaledBalance, index) - previousBalance;
 
     _userState[onBehalfOf].additionalData = index.toUint128();
 
     _mint(onBehalfOf, amountScaled.toUint128());
 
-    uint256 amountToMint = amount + balanceIncrease;
+    uint256 amountToMint = getTokenBalance(super.balanceOf(onBehalfOf), index) - previousBalance;
     emit Transfer(address(0), onBehalfOf, amountToMint);
     emit Mint(caller, onBehalfOf, amountToMint, balanceIncrease, index);
 
@@ -96,7 +94,6 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
    * @param user The user which debt is burnt
    * @param target The address that will receive the underlying, if any
    * @param amountScaled The pre-computed scaled amount getting burned
-   * @param amount The raw underlying amount, used for accurate event emission
    * @param index The variable debt index of the reserve
    * @param getTokenBalance Function pointer to compute token balance from scaled amount and index
    */
@@ -104,27 +101,26 @@ abstract contract ScaledBalanceTokenBase is MintableIncentivizedERC20, IScaledBa
     address user,
     address target,
     uint256 amountScaled,
-    uint256 amount,
     uint256 index,
     function(uint256, uint256) internal pure returns (uint256) getTokenBalance
   ) internal returns (bool) {
     require(amountScaled != 0, Errors.INVALID_BURN_AMOUNT);
 
     uint256 scaledBalance = super.balanceOf(user);
-
-    uint256 balanceIncrease = getTokenBalance(scaledBalance, index) -
-      getTokenBalance(scaledBalance, _userState[user].additionalData);
+    uint256 previousBalance = getTokenBalance(scaledBalance, _userState[user].additionalData);
+    uint256 balanceIncrease = getTokenBalance(scaledBalance, index) - previousBalance;
 
     _userState[user].additionalData = index.toUint128();
 
     _burn(user, amountScaled.toUint128());
 
-    if (balanceIncrease > amount) {
-      uint256 amountToMint = balanceIncrease - amount;
+    uint256 nextBalance = getTokenBalance(super.balanceOf(user), index);
+    if (nextBalance > previousBalance) {
+      uint256 amountToMint = nextBalance - previousBalance;
       emit Transfer(address(0), user, amountToMint);
       emit Mint(user, user, amountToMint, balanceIncrease, index);
     } else {
-      uint256 amountToBurn = amount - balanceIncrease;
+      uint256 amountToBurn = previousBalance - nextBalance;
       emit Transfer(user, address(0), amountToBurn);
       emit Burn(user, target, amountToBurn, balanceIncrease, index);
     }

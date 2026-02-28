@@ -115,12 +115,17 @@ library WadRayMath {
    * @return c = a*b/RAY, rounded up
    */
   function rayMulCeil(uint256 a, uint256 b) internal pure returns (uint256 c) {
-    // to avoid overflow, a <= (type(uint256).max - (RAY - 1)) / b
+    // to avoid overflow, a <= type(uint256).max / b
+    // Uses modulo-based ceiling so a*b up to type(uint256).max is accepted (matches Aave v3.6)
     assembly {
-      if iszero(or(iszero(b), iszero(gt(a, div(sub(not(0), sub(RAY, 1)), b))))) {
+      if iszero(or(iszero(b), iszero(gt(a, div(not(0), b))))) {
         revert(0, 0)
       }
-      c := div(add(mul(a, b), sub(RAY, 1)), RAY)
+      let product := mul(a, b)
+      c := div(product, RAY)
+      if gt(mod(product, RAY), 0) {
+        c := add(c, 1)
+      }
     }
   }
 

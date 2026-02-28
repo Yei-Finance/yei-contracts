@@ -102,7 +102,7 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     }
     uint256 amountScaled = TokenMath.getVTokenMintScaledAmount(amount, index);
     return (
-      _mintScaled(user, onBehalfOf, amountScaled, amount, index, TokenMath.getVTokenBalance),
+      _mintScaled(user, onBehalfOf, amountScaled, index, TokenMath.getVTokenBalance),
       scaledTotalSupply()
     );
   }
@@ -118,7 +118,6 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
       from,
       address(0),
       amountScaled,
-      amount,
       index,
       TokenMath.getVTokenBalance
     );
