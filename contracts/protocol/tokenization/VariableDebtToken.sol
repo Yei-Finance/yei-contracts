@@ -4,7 +4,6 @@ pragma solidity ^0.8.10;
 import {IERC20} from '../../dependencies/openzeppelin/contracts/IERC20.sol';
 import {SafeCast} from '../../dependencies/openzeppelin/contracts/SafeCast.sol';
 import {VersionedInitializable} from '../libraries/aave-upgradeability/VersionedInitializable.sol';
-import {WadRayMath} from '../libraries/math/WadRayMath.sol';
 import {Errors} from '../libraries/helpers/Errors.sol';
 import {IPool} from '../../interfaces/IPool.sol';
 import {IAaveIncentivesController} from '../../interfaces/IAaveIncentivesController.sol';
@@ -13,6 +12,7 @@ import {IVariableDebtToken} from '../../interfaces/IVariableDebtToken.sol';
 import {EIP712Base} from './base/EIP712Base.sol';
 import {DebtTokenBase} from './base/DebtTokenBase.sol';
 import {ScaledBalanceTokenBase} from './base/ScaledBalanceTokenBase.sol';
+import {TokenMath} from '../libraries/helpers/TokenMath.sol';
 
 /**
  * @title VariableDebtToken
@@ -22,7 +22,6 @@ import {ScaledBalanceTokenBase} from './base/ScaledBalanceTokenBase.sol';
  * @dev Transfer and approve functionalities are disabled since its a non-transferable token
  */
 contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDebtToken {
-  using WadRayMath for uint256;
   using SafeCast for uint256;
 
   uint256 public constant DEBT_TOKEN_REVISION = 0x1;
@@ -84,7 +83,11 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
       return 0;
     }
 
-    return scaledBalance.rayMul(POOL.getReserveNormalizedVariableDebt(_underlyingAsset));
+    return
+      TokenMath.getVTokenBalance(
+        scaledBalance,
+        POOL.getReserveNormalizedVariableDebt(_underlyingAsset)
+      );
   }
 
   /// @inheritdoc IVariableDebtToken
@@ -97,7 +100,11 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     if (user != onBehalfOf) {
       _decreaseBorrowAllowance(onBehalfOf, user, amount);
     }
-    return (_mintScaled(user, onBehalfOf, amount, index), scaledTotalSupply());
+    uint256 amountScaled = TokenMath.getVTokenMintScaledAmount(amount, index);
+    return (
+      _mintScaled(user, onBehalfOf, amountScaled, index, TokenMath.getVTokenBalance),
+      scaledTotalSupply()
+    );
   }
 
   /// @inheritdoc IVariableDebtToken
@@ -105,14 +112,25 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     address from,
     uint256 amount,
     uint256 index
-  ) external virtual override onlyPool returns (uint256) {
-    _burnScaled(from, address(0), amount, index);
-    return scaledTotalSupply();
+  ) external virtual override onlyPool returns (bool, uint256) {
+    uint256 amountScaled = TokenMath.getVTokenBurnScaledAmount(amount, index);
+    bool noMoreDebt = _burnScaled(
+      from,
+      address(0),
+      amountScaled,
+      index,
+      TokenMath.getVTokenBalance
+    );
+    return (noMoreDebt, scaledTotalSupply());
   }
 
   /// @inheritdoc IERC20
   function totalSupply() public view virtual override returns (uint256) {
-    return super.totalSupply().rayMul(POOL.getReserveNormalizedVariableDebt(_underlyingAsset));
+    return
+      TokenMath.getVTokenBalance(
+        super.totalSupply(),
+        POOL.getReserveNormalizedVariableDebt(_underlyingAsset)
+      );
   }
 
   /// @inheritdoc EIP712Base

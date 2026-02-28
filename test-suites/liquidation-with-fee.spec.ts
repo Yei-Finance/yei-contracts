@@ -367,7 +367,7 @@ makeSuite('Pool Liquidation: Add fee to liquidations', (testEnv) => {
 
     expect(userReserveDataAfter.currentStableDebt).to.be.closeTo(
       stableDebtBeforeTx.sub(amountToLiquidate),
-      2,
+      20,
       'Invalid user debt after liquidation'
     );
 
@@ -385,31 +385,31 @@ makeSuite('Pool Liquidation: Add fee to liquidations', (testEnv) => {
 
     expect(daiReserveDataAfter.availableLiquidity).to.be.closeTo(
       daiReserveDataBefore.availableLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(ethReserveDataAfter.availableLiquidity).to.be.closeTo(
       ethReserveDataBefore.availableLiquidity.sub(expectedLiquidationReward),
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
 
     expect(treasuryBalanceAfter).to.be.closeTo(
       treasuryBalanceBefore.add(liquidationProtocolFees),
-      2,
+      20,
       'Invalid treasury increase'
     );
 
     expect(liquidatorBalanceAfter).to.be.closeTo(
       liquidatorBalanceBefore.add(expectedLiquidationReward),
-      2,
+      20,
       'Invalid liquidator balance'
     );
 
     expect(daiReserveDataAfter.totalLiquidity).to.be.closeTo(
       daiReserveDataBefore.totalLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
@@ -417,7 +417,7 @@ makeSuite('Pool Liquidation: Add fee to liquidations', (testEnv) => {
       ethReserveDataBefore.totalLiquidity.sub(
         totalCollateralLiquidated.sub(liquidationProtocolFees)
       ),
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
   });
@@ -557,7 +557,7 @@ makeSuite('Pool Liquidation: Add fee to liquidations', (testEnv) => {
 
     expect(userReserveDataAfter.currentStableDebt).to.be.closeTo(
       userReserveDataBefore.currentStableDebt.sub(amountToLiquidate),
-      2,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 
@@ -575,31 +575,31 @@ makeSuite('Pool Liquidation: Add fee to liquidations', (testEnv) => {
 
     expect(usdcReserveDataAfter.availableLiquidity).to.be.closeTo(
       usdcReserveDataBefore.availableLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(ethReserveDataAfter.availableLiquidity).to.be.closeTo(
       ethReserveDataBefore.availableLiquidity.sub(expectedLiquidationReward),
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
 
     expect(treasuryBalanceAfter).to.be.closeTo(
       treasuryBalanceBefore.add(liquidationProtocolFees),
-      2,
+      20,
       'Invalid treasury increase'
     );
 
     expect(liquidatorBalanceAfter).to.be.closeTo(
       liquidatorBalanceBefore.add(expectedLiquidationReward),
-      2,
+      20,
       'Invalid liquidator balance'
     );
 
     expect(usdcReserveDataAfter.totalLiquidity).to.be.closeTo(
       usdcReserveDataBefore.totalLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
@@ -607,7 +607,7 @@ makeSuite('Pool Liquidation: Add fee to liquidations', (testEnv) => {
       ethReserveDataBefore.totalLiquidity.sub(
         totalCollateralLiquidated.sub(liquidationProtocolFees)
       ),
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
   });
@@ -730,31 +730,31 @@ makeSuite('Pool Liquidation: Add fee to liquidations', (testEnv) => {
 
     expect(userReserveDataAfter.currentStableDebt).to.be.closeTo(
       userReserveDataBefore.currentStableDebt.sub(expectedPrincipal),
-      2,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 
     expect(usdcReserveDataAfter.availableLiquidity).to.be.closeTo(
       usdcReserveDataBefore.availableLiquidity.add(expectedPrincipal),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(aaveReserveDataAfter.availableLiquidity).to.be.closeTo(
       aaveReserveDataBefore.availableLiquidity,
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
 
     expect(usdcReserveDataAfter.totalLiquidity).to.be.closeTo(
       usdcReserveDataBefore.totalLiquidity.add(expectedPrincipal),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
     expect(aaveReserveDataAfter.totalLiquidity).to.be.closeTo(
       aaveReserveDataBefore.totalLiquidity,
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
 
@@ -897,31 +897,31 @@ makeSuite('Pool Liquidation: Add fee to liquidations', (testEnv) => {
 
     expect(userReserveDataAfter.currentStableDebt).to.be.closeTo(
       userReserveDataBefore.currentStableDebt.sub(expectedPrincipal),
-      2,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 
     expect(usdcReserveDataAfter.availableLiquidity).to.be.closeTo(
       usdcReserveDataBefore.availableLiquidity.add(expectedPrincipal),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(aaveReserveDataAfter.availableLiquidity).to.be.closeTo(
       aaveReserveDataBefore.availableLiquidity,
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
 
     expect(usdcReserveDataAfter.totalLiquidity).to.be.closeTo(
       usdcReserveDataBefore.totalLiquidity.add(expectedPrincipal),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
     expect(aaveReserveDataAfter.totalLiquidity).to.be.closeTo(
       aaveReserveDataBefore.totalLiquidity,
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
 

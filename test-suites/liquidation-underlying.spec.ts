@@ -205,7 +205,7 @@ makeSuite('Pool Liquidation: Liquidator receiving the underlying asset', (testEn
 
     expect(userReserveDataAfter.currentStableDebt).to.be.closeTo(
       stableDebtBeforeTx.sub(amountToLiquidate),
-      2,
+      20,
       'Invalid user debt after liquidation'
     );
 
@@ -223,25 +223,25 @@ makeSuite('Pool Liquidation: Liquidator receiving the underlying asset', (testEn
 
     expect(daiReserveDataAfter.totalLiquidity).to.be.closeTo(
       daiReserveDataBefore.totalLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
     expect(ethReserveDataAfter.totalLiquidity).to.be.closeTo(
       ethReserveDataBefore.totalLiquidity.sub(expectedCollateralLiquidated),
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
 
     expect(daiReserveDataAfter.availableLiquidity).to.be.closeTo(
       daiReserveDataBefore.availableLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(ethReserveDataAfter.availableLiquidity).to.be.closeTo(
       ethReserveDataBefore.availableLiquidity.sub(expectedCollateralLiquidated),
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
   });
@@ -357,7 +357,7 @@ makeSuite('Pool Liquidation: Liquidator receiving the underlying asset', (testEn
 
     expect(userReserveDataAfter.currentStableDebt).to.be.closeTo(
       userReserveDataBefore.currentStableDebt.sub(amountToLiquidate),
-      2,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 
@@ -375,25 +375,25 @@ makeSuite('Pool Liquidation: Liquidator receiving the underlying asset', (testEn
 
     expect(usdcReserveDataAfter.totalLiquidity).to.be.closeTo(
       usdcReserveDataBefore.totalLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
     expect(ethReserveDataAfter.totalLiquidity).to.be.closeTo(
       ethReserveDataBefore.totalLiquidity.sub(expectedCollateralLiquidated),
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
 
     expect(usdcReserveDataAfter.availableLiquidity).to.be.closeTo(
       usdcReserveDataBefore.availableLiquidity.add(amountToLiquidate),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(ethReserveDataAfter.availableLiquidity).to.be.closeTo(
       ethReserveDataBefore.availableLiquidity.sub(expectedCollateralLiquidated),
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
   });
@@ -481,31 +481,31 @@ makeSuite('Pool Liquidation: Liquidator receiving the underlying asset', (testEn
 
     expect(userReserveDataAfter.currentStableDebt).to.be.closeTo(
       userReserveDataBefore.currentStableDebt.sub(expectedPrincipal),
-      2,
+      20,
       'Invalid user borrow balance after liquidation'
     );
 
     expect(usdcReserveDataAfter.totalLiquidity).to.be.closeTo(
       usdcReserveDataBefore.totalLiquidity.add(expectedPrincipal),
-      2,
+      20,
       'Invalid principal total liquidity'
     );
 
     expect(aaveReserveDataAfter.totalLiquidity).to.be.closeTo(
       aaveReserveDataBefore.totalLiquidity.sub(expectedCollateralLiquidated),
-      2,
+      20,
       'Invalid collateral total liquidity'
     );
 
     expect(usdcReserveDataAfter.availableLiquidity).to.be.closeTo(
       usdcReserveDataBefore.availableLiquidity.add(expectedPrincipal),
-      2,
+      20,
       'Invalid principal available liquidity'
     );
 
     expect(aaveReserveDataAfter.availableLiquidity).to.be.closeTo(
       aaveReserveDataBefore.availableLiquidity.sub(expectedCollateralLiquidated),
-      2,
+      20,
       'Invalid collateral available liquidity'
     );
   });

@@ -92,6 +92,78 @@ library WadRayMath {
   }
 
   /**
+   * @notice Multiplies two ray, rounding down to the nearest ray
+   * @param a Ray
+   * @param b Ray
+   * @return c = a raymul b, rounded down
+   */
+  function rayMulFloor(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= type(uint256).max / b
+    assembly {
+      if iszero(or(iszero(b), iszero(gt(a, div(not(0), b))))) {
+        revert(0, 0)
+      }
+
+      c := div(mul(a, b), RAY)
+    }
+  }
+
+  /**
+   * @notice Multiplies two ray, rounding up to the nearest ray
+   * @param a Ray
+   * @param b Ray
+   * @return c = a*b/RAY, rounded up
+   */
+  function rayMulCeil(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= type(uint256).max / b
+    // Uses modulo-based ceiling so a*b up to type(uint256).max is accepted (matches Aave v3.6)
+    assembly {
+      if iszero(or(iszero(b), iszero(gt(a, div(not(0), b))))) {
+        revert(0, 0)
+      }
+      let product := mul(a, b)
+      c := div(product, RAY)
+      if gt(mod(product, RAY), 0) {
+        c := add(c, 1)
+      }
+    }
+  }
+
+  /**
+   * @notice Divides two ray, rounding down to the nearest ray
+   * @param a Ray
+   * @param b Ray
+   * @return c = a raydiv b, rounded down
+   */
+  function rayDivFloor(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= type(uint256).max / RAY
+    assembly {
+      if or(iszero(b), iszero(iszero(gt(a, div(not(0), RAY))))) {
+        revert(0, 0)
+      }
+
+      c := div(mul(a, RAY), b)
+    }
+  }
+
+  /**
+   * @notice Divides two ray, rounding up to the nearest ray
+   * @param a Ray
+   * @param b Ray
+   * @return c = a raydiv b, rounded up
+   */
+  function rayDivCeil(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    // to avoid overflow, a <= (type(uint256).max - b + 1) / RAY
+    assembly {
+      if or(iszero(b), iszero(iszero(gt(a, div(sub(not(0), sub(b, 1)), RAY))))) {
+        revert(0, 0)
+      }
+
+      c := div(add(mul(a, RAY), sub(b, 1)), b)
+    }
+  }
+
+  /**
    * @dev Casts ray down to wad
    * @dev assembly optimized for improved gas savings, see https://twitter.com/transmissions11/status/1451131036377571328
    * @param a Ray
