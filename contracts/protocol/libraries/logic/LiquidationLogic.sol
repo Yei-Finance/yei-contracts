@@ -212,7 +212,6 @@ library LiquidationLogic {
     // Transfer fee to treasury if it is non-zero
     if (vars.liquidationProtocolFeeAmount != 0) {
       uint256 liquidityIndex = collateralReserve.getNormalizedIncome();
-      uint256 scaledDownUserBalance = vars.collateralAToken.scaledBalanceOf(params.user);
       // Use rayDivCeil to match the ceil rounding applied by transferOnLiquidation, so the
       // guard never misses an overshoot by 1 scaled unit. Cap using rayMulFloor so the
       // resulting fee amount ceil-divides back to exactly scaledDownUserBalance.
@@ -220,6 +219,7 @@ library LiquidationLogic {
         vars.liquidationProtocolFeeAmount,
         liquidityIndex
       );
+      uint256 scaledDownUserBalance = vars.collateralAToken.scaledBalanceOf(params.user);
       if (scaledDownLiquidationProtocolFee > scaledDownUserBalance) {
         vars.liquidationProtocolFeeAmount = TokenMath.getATokenBalance(
           scaledDownUserBalance,
