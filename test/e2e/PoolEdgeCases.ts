@@ -71,15 +71,27 @@ describe('E2E: Pool Edge Cases', () => {
   // ── mintToTreasury on inactive reserve ────────────────────────────────────────
 
   describe('mintToTreasury() on inactive reserves', () => {
-    it('mintToTreasury() skips (does not revert) for an inactive reserve', async () => {
+    it('mintToTreasury() skips inactive reserve: no aTokens minted to treasury', async () => {
       const ctx = await networkHelpers.loadFixture(deployMarket);
-      const { pool, poolConfigurator, weth, dai, user1 } = ctx;
+      const { pool, poolConfigurator, dai, aDai, deployer } = ctx;
 
       // Deactivate DAI (no suppliers, so _checkNoSuppliers passes)
       await poolConfigurator.write.setReserveActive([dai.address, false]);
 
-      // mintToTreasury with the deactivated reserve should succeed without reverting
-      await pool.write.mintToTreasury([[dai.address, weth.address]]);
+      // Capture treasury aDAI balance before the call
+      const treasuryBefore = await aDai.read.balanceOf([deployer.account.address]);
+
+      // mintToTreasury with the deactivated reserve: executeMintToTreasury hits the
+      // `!getActive()` branch → continue, skipping the inactive reserve entirely
+      await pool.write.mintToTreasury([[dai.address]]);
+
+      // Treasury aDAI balance must be unchanged (inactive reserve was skipped)
+      const treasuryAfter = await aDai.read.balanceOf([deployer.account.address]);
+      assert.equal(
+        treasuryAfter,
+        treasuryBefore,
+        'no aDAI must be minted to treasury for an inactive reserve'
+      );
     });
   });
 

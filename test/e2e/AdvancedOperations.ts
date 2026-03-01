@@ -238,7 +238,8 @@ describe('E2E: Advanced Operations', () => {
         { account: user1.account }
       );
 
-      // user1 supplies USDC to have aUSDC (mint first since user1 only has the 1000 they borrowed)
+      // user1 supplies 2000 aUSDC — more than the 1000 USDC debt — so MAX_UINT256 will be
+      // capped to the aToken balance, not the debt amount (line 213-215).
       await usdc.write.mint([user1.account.address, 2_000n * 10n ** 6n]);
       await usdc.write.approve([pool.address, 2_000n * 10n ** 6n], { account: user1.account });
       await pool.write.supply([usdc.address, 2_000n * 10n ** 6n, user1.account.address, 0], {
@@ -247,18 +248,30 @@ describe('E2E: Advanced Operations', () => {
 
       const debtBefore = await varDebtUsdc.read.balanceOf([user1.account.address]);
       const aUsdcBefore = await aUsdc.read.balanceOf([user1.account.address]);
-      assert.ok(debtBefore > 0n);
-      assert.ok(aUsdcBefore > 0n);
+      assert.ok(debtBefore > 0n, 'user must have debt before repay');
+      assert.ok(
+        aUsdcBefore > debtBefore,
+        'aUSDC balance must exceed debt to exercise the cap branch'
+      );
 
-      // MAX_UINT256 → sets amount to caller's aToken balance (line 213-215)
-      // Also triggers ceil payback branch (lines 225-242)
+      // MAX_UINT256 → amount is capped to aToken balance (line 213-215).
+      // Since aUSDC balance (≈2000) > debt (≈1000), the debt is fully repaid.
       const maxUint = 2n ** 256n - 1n;
       await pool.write.repayWithATokens([usdc.address, maxUint, VARIABLE_RATE_MODE], {
         account: user1.account,
       });
 
+      // Debt must be fully cleared (aToken balance > debt, so the whole debt is covered)
       const debtAfter = await varDebtUsdc.read.balanceOf([user1.account.address]);
-      assert.ok(debtAfter < debtBefore, 'debt must decrease');
+      assert.equal(debtAfter, 0n, 'entire debt must be repaid when aToken balance exceeds debt');
+
+      // aUSDC burned must be approximately the debt that was repaid, not MAX_UINT256
+      const aUsdcAfter = await aUsdc.read.balanceOf([user1.account.address]);
+      const aUsdcBurned = aUsdcBefore - aUsdcAfter;
+      assert.ok(
+        aUsdcBurned > 0n && aUsdcBurned < aUsdcBefore,
+        'only the debt-equivalent aUSDC must be burned, not the entire balance'
+      );
     });
   });
 

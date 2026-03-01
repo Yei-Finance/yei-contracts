@@ -61,9 +61,13 @@ describe('E2E: Borrow & Repay', () => {
       // user1 should have USDC in their wallet
       assert.equal(await usdc.read.balanceOf([user1.account.address]), borrowAmount);
 
-      // user1 should have variable debt
+      // At the initial RAY borrow index ceil(amount × RAY / RAY) = amount exactly — no rounding gap
       const debtBalance = await varDebtUsdc.read.balanceOf([user1.account.address]);
-      assert.ok(debtBalance >= borrowAmount, 'debt must be >= borrowed amount (ceil)');
+      assert.equal(
+        debtBalance,
+        borrowAmount,
+        'debt must equal borrowed amount at initial RAY index'
+      );
     });
 
     it('borrow at index=RAY: scaledDebt == amount exactly (ceil(x/RAY) = x when index=RAY)', async () => {
@@ -142,7 +146,11 @@ describe('E2E: Borrow & Repay', () => {
       // getUserAccountData returns positional tuple: [collateral, debt, availBorrows, ltThresh, ltv, healthFactor]
       const userData = await pool.read.getUserAccountData([user1.account.address]);
       assert.ok(userData[1] > 0n, 'total debt must be positive');
-      assert.ok(userData[5] > 0n, 'health factor must be positive');
+      // HF = 10 WETH × $2000 × 0.85 / 500 USDC = 34.0 — well above 1.0 (1e18 in ray notation)
+      assert.ok(
+        userData[5] > 10n ** 18n,
+        'health factor must be above 1.0 for a well-collateralised borrow'
+      );
       assert.ok(userData[2] > 0n, 'available borrows must be positive');
     });
 
@@ -265,35 +273,77 @@ describe('E2E: Borrow & Repay', () => {
       assert.equal(await varDebtUsdc.read.scaledBalanceOf([user1.account.address]), 0n);
     });
 
-    it('repay floor rounding leaves residual debt when rounding gap exists', async () => {
+    it('repay uses floor rounding: scaledBurned < scaledMinted for same tiny amount at index > RAY', async () => {
+      // This test proves the asymmetry: borrow uses ceil, repay uses floor.
+      // At a near-RAY index ceil == floor, so we must first push the variable borrow
+      // index significantly above RAY (90 % utilization for 1 year → ~1.4× RAY).
       const ctx = await networkHelpers.loadFixture(deployMarket);
-      const { pool, usdc, varDebtUsdc, user1 } = ctx;
-      await setupCollateralAndBorrow(ctx);
+      const { pool, usdc, weth, varDebtUsdc, user1, deployer } = ctx;
 
-      // Borrow large amount at RAY index so scaled debt = 10*RAY
-      const bigBorrow = 10n * 10n ** 6n; // 10 USDC
-      await pool.write.borrow(
-        [usdc.address, bigBorrow, VARIABLE_RATE_MODE, 0, user1.account.address],
-        {
-          account: user1.account,
-        }
-      );
+      // Seed 100 k USDC and push utilization to 90 % so the borrow index grows fast
+      const usdcLiq = 100_000n * 10n ** 6n;
+      await usdc.write.mint([deployer.account.address, usdcLiq]);
+      await usdc.write.approve([pool.address, usdcLiq]);
+      await pool.write.supply([usdc.address, usdcLiq, deployer.account.address, 0]);
 
-      const scaledBefore = await varDebtUsdc.read.scaledBalanceOf([user1.account.address]);
-
-      // Repay a tiny odd amount
-      const repay = 3n;
-      await usdc.write.approve([pool.address, repay], { account: user1.account });
-      await pool.write.repay([usdc.address, repay, VARIABLE_RATE_MODE, user1.account.address], {
+      // user1 supplies 60 WETH (80 % LTV × $2 000 × 60 = $96 k borrow capacity)
+      await weth.write.mint([user1.account.address, 60n * WAD]);
+      await weth.write.approve([pool.address, 60n * WAD], { account: user1.account });
+      await pool.write.supply([weth.address, 60n * WAD, user1.account.address, 0], {
         account: user1.account,
       });
 
-      const scaledAfter = await varDebtUsdc.read.scaledBalanceOf([user1.account.address]);
-      // Floor rounding: scaled burned ≤ repay amount (index may be slightly > RAY after borrow)
-      // This verifies floor (not ceil) rounding is used for repay
+      // Borrow 90 k USDC (90 % utilization → above kink → steep slope → fast index growth)
+      await pool.write.borrow(
+        [usdc.address, 90_000n * 10n ** 6n, VARIABLE_RATE_MODE, 0, user1.account.address],
+        { account: user1.account }
+      );
+
+      // Advance 1 year so the variable borrow index grows well above RAY
+      await networkHelpers.time.increase(365 * 24 * 3600);
+
+      // ── Borrow a tiny amount at the elevated index ──────────────────────────
+      // BorrowLogic: scaledMinted = ceil(tinyAmount × RAY / idx)
+      const tinyAmount = 3n;
+      const scaledBeforeBorrow = await varDebtUsdc.read.scaledTotalSupply();
+      await pool.write.borrow(
+        [usdc.address, tinyAmount, VARIABLE_RATE_MODE, 0, user1.account.address],
+        { account: user1.account }
+      );
+      const scaledAfterBorrow = await varDebtUsdc.read.scaledTotalSupply();
+      const mintedScaled = scaledAfterBorrow - scaledBeforeBorrow;
+
+      // Read the stored borrow index used for that transaction
+      const idxAtBorrow = (await pool.read.getReserveData([usdc.address])).variableBorrowIndex;
+      const RAY = 10n ** 27n;
+      const expectedCeil = (tinyAmount * RAY + idxAtBorrow - 1n) / idxAtBorrow;
+      const expectedFloor = (tinyAmount * RAY) / idxAtBorrow;
+
+      assert.equal(mintedScaled, expectedCeil, 'borrow must use ceil rounding');
       assert.ok(
-        scaledBefore - scaledAfter <= repay,
-        'floor: scaled burned must not exceed repay amount'
+        expectedCeil > expectedFloor,
+        'index must be elevated enough to split ceil and floor'
+      );
+
+      // ── Repay the same tiny amount at (nearly) the same elevated index ──────
+      // BorrowLogic: scaledBurned = floor(tinyAmount × RAY / idx)
+      await usdc.write.approve([pool.address, tinyAmount], { account: user1.account });
+      await pool.write.repay(
+        [usdc.address, tinyAmount, VARIABLE_RATE_MODE, user1.account.address],
+        { account: user1.account }
+      );
+      const scaledAfterRepay = await varDebtUsdc.read.scaledTotalSupply();
+      const burnedScaled = scaledAfterBorrow - scaledAfterRepay;
+
+      // Read the index used for the repay (one second later — negligibly higher)
+      const idxAtRepay = (await pool.read.getReserveData([usdc.address])).variableBorrowIndex;
+      const expectedFloorAtRepay = (tinyAmount * RAY) / idxAtRepay;
+
+      assert.equal(burnedScaled, expectedFloorAtRepay, 'repay must use floor rounding');
+      // Protocol-favoring: borrow mints ceil units, repay burns only floor units
+      assert.ok(
+        burnedScaled < mintedScaled,
+        'repay must burn fewer scaled units than the borrow minted (floor < ceil)'
       );
     });
 

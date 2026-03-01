@@ -80,8 +80,8 @@ describe('E2E: Stable Rate Borrowing', () => {
       );
 
       // Verify stable debt was created
-      const wethReserve = await pool.read.getReserveData([usdc.address]);
-      assert.ok(wethReserve.currentStableBorrowRate > 0n, 'stable borrow rate must be set');
+      const usdcReserve = await pool.read.getReserveData([usdc.address]);
+      assert.ok(usdcReserve.currentStableBorrowRate > 0n, 'stable borrow rate must be set');
     });
   });
 
@@ -129,7 +129,8 @@ describe('E2E: Stable Rate Borrowing', () => {
   describe('swapBorrowRateMode (Pool 327-332, BorrowLogic 318-320, ValidationLogic 364-391)', () => {
     it('swap FROM stable TO variable (ValidationLogic 371-372)', async () => {
       const ctx = await networkHelpers.loadFixture(deployMarket);
-      const { pool, poolConfigurator, weth, usdc, user1, deployer } = ctx;
+      const { pool, poolConfigurator, weth, usdc, stableDebtUsdc, varDebtUsdc, user1, deployer } =
+        ctx;
 
       await poolConfigurator.write.setReserveStableRateBorrowing([usdc.address, true]);
 
@@ -145,9 +146,21 @@ describe('E2E: Stable Rate Borrowing', () => {
       });
 
       // Borrow stably
+      const borrowAmt = 1_000n * 10n ** 6n;
       await pool.write.borrow(
-        [usdc.address, 1_000n * 10n ** 6n, STABLE_RATE_MODE, 0, user1.account.address],
+        [usdc.address, borrowAmt, STABLE_RATE_MODE, 0, user1.account.address],
         { account: user1.account }
+      );
+
+      // Confirm user has stable debt and no variable debt before the swap
+      assert.ok(
+        (await stableDebtUsdc.read.balanceOf([user1.account.address])) > 0n,
+        'user must have stable debt before swap'
+      );
+      assert.equal(
+        await varDebtUsdc.read.scaledBalanceOf([user1.account.address]),
+        0n,
+        'user must have no variable debt before swap'
       );
 
       // Swap stable→variable: covers Pool 327-332, BorrowLogic 318-320,
@@ -156,9 +169,16 @@ describe('E2E: Stable Rate Borrowing', () => {
         account: user1.account,
       });
 
-      // After swap, user should have variable debt
-      const reserveData = await pool.read.getReserveData([usdc.address]);
-      assert.ok(reserveData.currentVariableBorrowRate > 0n);
+      // After the swap the user's debt must have migrated from stable to variable
+      assert.equal(
+        await stableDebtUsdc.read.balanceOf([user1.account.address]),
+        0n,
+        'stable debt must be zero after swapping to variable'
+      );
+      assert.ok(
+        (await varDebtUsdc.read.scaledBalanceOf([user1.account.address])) > 0n,
+        'user must have variable debt after the swap'
+      );
     });
 
     it('swap FROM variable TO stable (ValidationLogic 373-389)', async () => {

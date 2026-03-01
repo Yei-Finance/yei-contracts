@@ -36,7 +36,12 @@ describe('E2E: Supply & Withdraw', () => {
       assert.equal(scaledBalance, amount);
 
       const balance = await aWeth.read.balanceOf([user1.account.address]);
-      assert.ok(balance > 0n, 'aToken balance must be > 0');
+      // At the initial RAY index balanceOf == scaledBalance × RAY / RAY == amount exactly
+      assert.equal(
+        balance,
+        amount,
+        'aToken balance must equal supplied amount at initial RAY index'
+      );
     });
 
     it('isFirstSupply = true on first supply: collateral auto-enabled', async () => {
@@ -324,68 +329,28 @@ describe('E2E: Supply & Withdraw', () => {
         account: user1.account,
       });
 
+      const dataEnabled = await pool.read.getUserAccountData([user1.account.address]);
+      assert.ok(dataEnabled[0] > 0n, 'totalCollateralBase must be positive after supply');
+
       // Disable collateral
       await pool.write.setUserUseReserveAsCollateral([weth.address, false], {
         account: user1.account,
       });
 
+      const dataDisabled = await pool.read.getUserAccountData([user1.account.address]);
+      assert.equal(dataDisabled[0], 0n, 'totalCollateralBase must be 0 after disabling');
+
       // Re-enable collateral
       await pool.write.setUserUseReserveAsCollateral([weth.address, true], {
         account: user1.account,
       });
-    });
-  });
 
-  // ── aToken transfer ─────────────────────────────────────────────────────────
-
-  describe('AToken.transfer()', () => {
-    it('user can transfer aTokens to another user', async () => {
-      const { pool, weth, aWeth, user1, user2 } = await networkHelpers.loadFixture(deployMarket);
-
-      const amount = 4n * WAD;
-      const transferAmount = 1n * WAD;
-      await weth.write.mint([user1.account.address, amount]);
-      await weth.write.approve([pool.address, amount], { account: user1.account });
-      await pool.write.supply([weth.address, amount, user1.account.address, 0], {
-        account: user1.account,
-      });
-
-      const scaledBefore = await aWeth.read.scaledBalanceOf([user1.account.address]);
-      await aWeth.write.transfer([user2.account.address, transferAmount], {
-        account: user1.account,
-      });
-
-      const scaledAfter = await aWeth.read.scaledBalanceOf([user1.account.address]);
-      const user2Scaled = await aWeth.read.scaledBalanceOf([user2.account.address]);
-
-      assert.ok(scaledAfter < scaledBefore, 'sender scaled balance must decrease');
-      assert.ok(user2Scaled > 0n, 'receiver must have positive balance');
-    });
-
-    it('aToken approve and transferFrom work', async () => {
-      const { pool, weth, aWeth, user1, user2 } = await networkHelpers.loadFixture(deployMarket);
-
-      const amount = 2n * WAD;
-      await weth.write.mint([user1.account.address, amount]);
-      await weth.write.approve([pool.address, amount], { account: user1.account });
-      await pool.write.supply([weth.address, amount, user1.account.address, 0], {
-        account: user1.account,
-      });
-
-      // user1 approves user2 to spend 1 aWETH
-      await aWeth.write.approve([user2.account.address, 1n * WAD], { account: user1.account });
+      const dataReenabled = await pool.read.getUserAccountData([user1.account.address]);
+      assert.ok(dataReenabled[0] > 0n, 'totalCollateralBase must be restored after re-enabling');
       assert.equal(
-        await aWeth.read.allowance([user1.account.address, user2.account.address]),
-        1n * WAD
-      );
-
-      // user2 transfers from user1
-      await aWeth.write.transferFrom([user1.account.address, user2.account.address, 1n * WAD], {
-        account: user2.account,
-      });
-      assert.ok(
-        (await aWeth.read.scaledBalanceOf([user2.account.address])) > 0n,
-        'user2 must receive aTokens'
+        dataReenabled[0],
+        dataEnabled[0],
+        're-enabled collateral must equal original value'
       );
     });
   });

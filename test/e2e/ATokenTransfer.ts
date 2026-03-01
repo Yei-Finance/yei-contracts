@@ -313,10 +313,31 @@ describe('E2E: AToken Transfer', () => {
       const ctx = await networkHelpers.loadFixture(deployMarket);
       const { aWeth, user1, user2 } = ctx;
 
+      const user1BalBefore = await aWeth.read.scaledBalanceOf([user1.account.address]);
+      const user2BalBefore = await aWeth.read.scaledBalanceOf([user2.account.address]);
+
       // No approval needed for 0-amount transfer
       await aWeth.write.transferFrom([user1.account.address, user2.account.address, 0n], {
         account: user2.account,
       });
+
+      // Neither balance must change
+      assert.equal(
+        await aWeth.read.scaledBalanceOf([user1.account.address]),
+        user1BalBefore,
+        'sender scaled balance must not change on zero-amount transferFrom'
+      );
+      assert.equal(
+        await aWeth.read.scaledBalanceOf([user2.account.address]),
+        user2BalBefore,
+        'receiver scaled balance must not change on zero-amount transferFrom'
+      );
+      // Allowance was never consumed — must remain zero
+      assert.equal(
+        await aWeth.read.allowance([user1.account.address, user2.account.address]),
+        0n,
+        'allowance must stay zero: zero-amount transferFrom requires no approval'
+      );
     });
 
     it('increaseAllowance adds to existing allowance', async () => {
@@ -390,7 +411,7 @@ describe('E2E: AToken Transfer', () => {
   // ── setUserUseReserveAsCollateral edge cases ───────────────────────────────
 
   describe('setUserUseReserveAsCollateral() edge cases', () => {
-    it('no event emitted when enabling collateral that is already enabled', async () => {
+    it('setUserUseReserveAsCollateral(true) is idempotent when already enabled', async () => {
       const ctx = await networkHelpers.loadFixture(deployMarket);
       const { pool, weth, dataProvider, user1 } = ctx;
 
@@ -401,27 +422,40 @@ describe('E2E: AToken Transfer', () => {
         account: user1.account,
       });
 
-      // Verify it's already enabled
+      // Verify it's already enabled after supply
       // getUserReserveData returns plain array; [8] = usageAsCollateralEnabled
       const dataBefore = await dataProvider.read.getUserReserveData([
         weth.address,
         user1.account.address,
       ]);
-      assert.equal((dataBefore as any)[8], true, 'usageAsCollateralEnabled must be true');
+      assert.equal(
+        (dataBefore as any)[8],
+        true,
+        'usageAsCollateralEnabled must be true after supply'
+      );
 
-      // Setting to true again should succeed without error (idempotent)
+      const collateralBefore = (await pool.read.getUserAccountData([user1.account.address]))[0];
+
+      // Setting to true again must be a no-op: the early-return path in SupplyLogic is taken.
       await pool.write.setUserUseReserveAsCollateral([weth.address, true], {
         account: user1.account,
       });
 
+      // Verify state is completely unchanged (early-return means no storage writes)
       const dataAfter = await dataProvider.read.getUserReserveData([
         weth.address,
         user1.account.address,
       ]);
       assert.equal((dataAfter as any)[8], true, 'usageAsCollateralEnabled must remain true');
+      const collateralAfter = (await pool.read.getUserAccountData([user1.account.address]))[0];
+      assert.equal(
+        collateralAfter,
+        collateralBefore,
+        'totalCollateralBase must not change on idempotent call (no state write, no event)'
+      );
     });
 
-    it('no event emitted when disabling collateral that is already disabled', async () => {
+    it('setUserUseReserveAsCollateral(false) is idempotent when already disabled', async () => {
       const ctx = await networkHelpers.loadFixture(deployMarket);
       const { pool, weth, dataProvider, user1 } = ctx;
 
@@ -442,18 +476,29 @@ describe('E2E: AToken Transfer', () => {
         weth.address,
         user1.account.address,
       ]);
-      assert.equal((dataBefore as any)[8], false, 'collateral must be disabled');
+      assert.equal((dataBefore as any)[8], false, 'collateral must be disabled before second call');
 
-      // Disable again (idempotent)
+      // totalCollateralBase must already be 0 after the first disable
+      const collateralDisabled = (await pool.read.getUserAccountData([user1.account.address]))[0];
+      assert.equal(collateralDisabled, 0n, 'totalCollateralBase must be 0 after first disable');
+
+      // Disable again — must be a no-op: the early-return path in SupplyLogic is taken.
       await pool.write.setUserUseReserveAsCollateral([weth.address, false], {
         account: user1.account,
       });
 
+      // Verify state is completely unchanged (early-return means no storage writes, no event)
       const dataAfter = await dataProvider.read.getUserReserveData([
         weth.address,
         user1.account.address,
       ]);
       assert.equal((dataAfter as any)[8], false, 'collateral must stay disabled');
+      const collateralAfter = (await pool.read.getUserAccountData([user1.account.address]))[0];
+      assert.equal(
+        collateralAfter,
+        0n,
+        'totalCollateralBase must remain 0 on idempotent disable (no state write, no event)'
+      );
     });
   });
 });
