@@ -36,6 +36,22 @@ contract WadRayMathWrapper {
     return WadRayMath.rayDiv(a, b);
   }
 
+  function rayMulFloor(uint256 a, uint256 b) public pure returns (uint256) {
+    return WadRayMath.rayMulFloor(a, b);
+  }
+
+  function rayMulCeil(uint256 a, uint256 b) public pure returns (uint256) {
+    return WadRayMath.rayMulCeil(a, b);
+  }
+
+  function rayDivFloor(uint256 a, uint256 b) public pure returns (uint256) {
+    return WadRayMath.rayDivFloor(a, b);
+  }
+
+  function rayDivCeil(uint256 a, uint256 b) public pure returns (uint256) {
+    return WadRayMath.rayDivCeil(a, b);
+  }
+
   function rayToWad(uint256 a) public pure returns (uint256) {
     return WadRayMath.rayToWad(a);
   }
