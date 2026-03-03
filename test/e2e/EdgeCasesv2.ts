@@ -12,6 +12,9 @@
  *   - ScaledBalanceTokenBase.sol lines 53-54: getPreviousIndex
  *   - ScaledBalanceTokenBase.sol lines 162-175: aToken transfer with interest accrual (both emit branches)
  *   - PoolConfigurator.sol lines 154-160: configureReserveAsCollateral with threshold=0 (disable collateral)
+ *   - ACLManager.sol line 41: setRoleAdmin
+ *   - IncentivizedERC20.sol lines 193-196: _transfer with incentives controller
+ *   - MintableIncentivizedERC20.sol lines 44, 63: _mint/_burn with incentives controller
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -382,6 +385,64 @@ describe('E2E: Miscellaneous Coverage', () => {
       assert.equal(ltv, 0n, 'LTV must be 0 after disabling collateral');
       assert.equal(lt, 0n, 'liquidationThreshold must be 0 after disabling collateral');
       assert.equal(bonus, 0n, 'liquidationBonus must be 0 after disabling collateral');
+    });
+  });
+
+  // ── ACLManager.setRoleAdmin (line 41) ──────────────────────────────────
+
+  describe('ACLManager.setRoleAdmin (line 41)', () => {
+    it('deployer can set a custom admin role for an arbitrary role', async () => {
+      const ctx = await networkHelpers.loadFixture(deployMarket);
+      const { aclManager } = ctx;
+      const { viem } = await network.connect();
+      const { keccak256, toHex } = await import('viem');
+
+      const customRole = keccak256(toHex('CUSTOM_ROLE'));
+      const adminRole = keccak256(toHex('CUSTOM_ADMIN'));
+
+      await aclManager.write.setRoleAdmin([customRole, adminRole]);
+
+      const result = await aclManager.read.getRoleAdmin([customRole]);
+      assert.equal(result, adminRole);
+    });
+  });
+
+  // ── Incentives controller handleAction paths ──────────────────────────
+
+  describe('IncentivizedERC20 + MintableIncentivizedERC20 incentives paths', () => {
+    async function deployWithIncentives({ viem }: any) {
+      const base = await deployMarket({ viem });
+      // Deploy MockIncentivesController inside the fixture so it persists after snapshot
+      const incentives = await viem.deployContract('MockIncentivesController');
+      // Set it on aWeth
+      await base.aWeth.write.setIncentivesController([incentives.address], {
+        account: base.deployer.account,
+      });
+      return { ...base, incentives };
+    }
+
+    it('supply/withdraw/transfer with active incentives controller triggers handleAction', async () => {
+      const ctx = await networkHelpers.loadFixture(deployWithIncentives);
+      const { pool, aWeth, weth, user1, user2 } = ctx;
+
+      // Supply → _mint → MintableIncentivizedERC20._mint → handleAction (line 44)
+      await weth.write.mint([user1.account.address, 10n * WAD]);
+      await weth.write.approve([pool.address, 10n * WAD], { account: user1.account });
+      await pool.write.supply([weth.address, 10n * WAD, user1.account.address, 0], {
+        account: user1.account,
+      });
+
+      // Transfer → IncentivizedERC20._transfer → handleAction (lines 193-196)
+      await aWeth.write.transfer([user2.account.address, 1n * WAD], { account: user1.account });
+
+      // Withdraw → _burn → MintableIncentivizedERC20._burn → handleAction (line 63)
+      await pool.write.withdraw([weth.address, 1n * WAD, user1.account.address], {
+        account: user1.account,
+      });
+
+      // If we got here without revert, all handleAction calls were executed
+      const balance = await aWeth.read.balanceOf([user1.account.address]);
+      assert.ok(balance > 0n, 'user1 must still have aWeth after partial withdraw');
     });
   });
 });
