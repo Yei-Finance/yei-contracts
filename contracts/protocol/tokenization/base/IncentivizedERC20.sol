@@ -52,7 +52,7 @@ abstract contract IncentivizedERC20 is Context, IERC20Detailed {
   mapping(address => UserState) internal _userState;
 
   // Map of allowances (delegator => delegatee => allowanceAmount)
-  mapping(address => mapping(address => uint256)) private _allowances;
+  mapping(address => mapping(address => uint256)) internal _allowances;
 
   uint256 internal _totalSupply;
   string private _name;

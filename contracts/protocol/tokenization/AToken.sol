@@ -237,6 +237,20 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     _transfer(from, to, amount, true);
   }
 
+  /// @inheritdoc IERC20
+  function transferFrom(
+    address sender,
+    address recipient,
+    uint256 amount
+  ) external virtual override(IncentivizedERC20, IERC20) returns (bool) {
+    uint256 index = POOL.getReserveNormalizedIncome(_underlyingAsset);
+    uint256 amountScaled = TokenMath.getATokenTransferScaledAmount(amount, index);
+    uint256 actualAmount = TokenMath.getATokenBalance(amountScaled, index);
+    _approve(sender, _msgSender(), _allowances[sender][_msgSender()] - actualAmount);
+    _transfer(sender, recipient, amount, true);
+    return true;
+  }
+
   /**
    * @dev Overrides the base function to fully implement IAToken
    * @dev see `EIP712Base.DOMAIN_SEPARATOR()` for more detailed documentation

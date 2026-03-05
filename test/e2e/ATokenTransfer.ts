@@ -361,6 +361,160 @@ describe('E2E: AToken Transfer', () => {
     });
   });
 
+  // ── transferFrom allowance rounding ─────────────────────────────────────────
+
+  describe('transferFrom() — allowance rounding correctness', () => {
+    it('allowance consumed reflects actual scaled transfer, not raw amount', async () => {
+      // When index > RAY, rayDivCeil(amount, index) may produce a scaled amount
+      // whose underlying value (rayMulFloor(scaled, index)) differs from the raw amount.
+      // The allowance must be decremented by the actual underlying cost, not by `amount`.
+      const ctx = await networkHelpers.loadFixture(deployMarket);
+      const { pool, weth, dai, aWeth, user1, user2, deployer } = ctx;
+
+      // Supply WETH as user1
+      const supplyAmt = 100n * WAD;
+      await weth.write.mint([user1.account.address, supplyAmt]);
+      await weth.write.approve([pool.address, supplyAmt], { account: user1.account });
+      await pool.write.supply([weth.address, supplyAmt, user1.account.address, 0], {
+        account: user1.account,
+      });
+
+      // Create borrowing activity so the liquidity index grows above RAY
+      const daiLiq = 1_000_000n * WAD;
+      await dai.write.mint([deployer.account.address, daiLiq]);
+      await dai.write.approve([pool.address, daiLiq]);
+      await pool.write.supply([dai.address, daiLiq, deployer.account.address, 0]);
+
+      // user2 supplies WETH collateral and borrows DAI to generate interest
+      const user2Collateral = 50n * WAD;
+      await weth.write.mint([user2.account.address, user2Collateral]);
+      await weth.write.approve([pool.address, user2Collateral], { account: user2.account });
+      await pool.write.supply([weth.address, user2Collateral, user2.account.address, 0], {
+        account: user2.account,
+      });
+      await pool.write.borrow(
+        [dai.address, 10_000n * WAD, VARIABLE_RATE_MODE, 0, user2.account.address],
+        { account: user2.account }
+      );
+
+      // Advance time to accrue interest, pushing index above RAY
+      await networkHelpers.time.increase(365n * 24n * 60n * 60n); // 1 year
+
+      // Disable collateral for user1 so transfer doesn't trigger HF issues
+      await pool.write.setUserUseReserveAsCollateral([weth.address, false], {
+        account: user1.account,
+      });
+
+      // Approve a generous allowance and do a transferFrom
+      const transferAmt = 10n * WAD;
+      const bigAllowance = 100n * WAD;
+      await aWeth.write.approve([deployer.account.address, bigAllowance], {
+        account: user1.account,
+      });
+
+      const balBefore = await aWeth.read.balanceOf([user1.account.address]);
+
+      await aWeth.write.transferFrom([user1.account.address, user2.account.address, transferAmt], {
+        account: deployer.account,
+      });
+
+      const balAfter = await aWeth.read.balanceOf([user1.account.address]);
+      const allowanceAfter = await aWeth.read.allowance([
+        user1.account.address,
+        deployer.account.address,
+      ]);
+
+      // The actual balance decrease
+      const balanceDecrease = balBefore - balAfter;
+      // The actual allowance consumed
+      const allowanceConsumed = bigAllowance - allowanceAfter;
+
+      // Key assertion: allowance consumed must equal the actual balance decrease
+      // (both use the same rounding: rayMulFloor(rayDivCeil(amount, index), index))
+      assert.equal(
+        allowanceConsumed,
+        balanceDecrease,
+        'allowance consumed must match the actual balanceOf decrease'
+      );
+
+      // The consumed amount may differ from the raw transferAmt due to rounding
+      // (this is the whole point of the fix — before the fix, allowanceConsumed == transferAmt
+      // which could be less than balanceDecrease, violating the ERC-20 invariant)
+      assert.ok(
+        allowanceConsumed >= transferAmt,
+        'allowance consumed must be >= raw amount (rounding is protocol-favoring)'
+      );
+    });
+
+    it('repeated transferFrom never consumes less allowance than balance decrease', async () => {
+      // Perform multiple small transferFrom calls and verify the cumulative invariant:
+      // total allowance consumed must always be >= total balance decrease.
+      const ctx = await networkHelpers.loadFixture(deployMarket);
+      const { pool, weth, dai, aWeth, user1, user2, deployer } = ctx;
+
+      const supplyAmt = 100n * WAD;
+      await weth.write.mint([user1.account.address, supplyAmt]);
+      await weth.write.approve([pool.address, supplyAmt], { account: user1.account });
+      await pool.write.supply([weth.address, supplyAmt, user1.account.address, 0], {
+        account: user1.account,
+      });
+
+      // Generate interest so index > RAY
+      const daiLiq = 1_000_000n * WAD;
+      await dai.write.mint([deployer.account.address, daiLiq]);
+      await dai.write.approve([pool.address, daiLiq]);
+      await pool.write.supply([dai.address, daiLiq, deployer.account.address, 0]);
+
+      const user2Collateral = 50n * WAD;
+      await weth.write.mint([user2.account.address, user2Collateral]);
+      await weth.write.approve([pool.address, user2Collateral], { account: user2.account });
+      await pool.write.supply([weth.address, user2Collateral, user2.account.address, 0], {
+        account: user2.account,
+      });
+      await pool.write.borrow(
+        [dai.address, 10_000n * WAD, VARIABLE_RATE_MODE, 0, user2.account.address],
+        { account: user2.account }
+      );
+
+      await networkHelpers.time.increase(365n * 24n * 60n * 60n);
+
+      await pool.write.setUserUseReserveAsCollateral([weth.address, false], {
+        account: user1.account,
+      });
+
+      const bigAllowance = 50n * WAD;
+      await aWeth.write.approve([deployer.account.address, bigAllowance], {
+        account: user1.account,
+      });
+
+      const balStart = await aWeth.read.balanceOf([user1.account.address]);
+
+      // Do 5 small transfers
+      const transferAmt = WAD;
+      for (let i = 0; i < 5; i++) {
+        await aWeth.write.transferFrom(
+          [user1.account.address, user2.account.address, transferAmt],
+          { account: deployer.account }
+        );
+      }
+
+      const balEnd = await aWeth.read.balanceOf([user1.account.address]);
+      const allowanceEnd = await aWeth.read.allowance([
+        user1.account.address,
+        deployer.account.address,
+      ]);
+
+      const totalBalanceDecrease = balStart - balEnd;
+      const totalAllowanceConsumed = bigAllowance - allowanceEnd;
+
+      // The key invariant: a spender can never cause more balance loss than allowance consumed
+      assert.ok(
+        totalAllowanceConsumed >= totalBalanceDecrease,
+        'cumulative allowance consumed must be >= cumulative balance decrease'
+      );
+    });
+  });
+
   // ── AToken metadata ────────────────────────────────────────────────────────
 
   describe('AToken metadata', () => {
