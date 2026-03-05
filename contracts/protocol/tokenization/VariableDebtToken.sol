@@ -100,7 +100,7 @@ contract VariableDebtToken is DebtTokenBase, ScaledBalanceTokenBase, IVariableDe
     uint256 amountScaled = TokenMath.getVTokenMintScaledAmount(amount, index);
     if (user != onBehalfOf) {
       uint256 actualAmount = TokenMath.getVTokenBalance(amountScaled, index);
-      _decreaseBorrowAllowance(onBehalfOf, user, actualAmount);
+      _decreaseBorrowAllowance(onBehalfOf, user, amount, actualAmount);
     }
     return (
       _mintScaled(user, onBehalfOf, amountScaled, index, TokenMath.getVTokenBalance),
