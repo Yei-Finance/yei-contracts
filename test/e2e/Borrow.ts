@@ -456,6 +456,128 @@ describe('E2E: Borrow & Repay', () => {
     });
   });
 
+  // ── credit delegation rounding ───────────────────────────────────────────────
+
+  describe('credit delegation allowance rounding', () => {
+    it('delegation allowance consumed reflects actual debt increase, not raw amount', async () => {
+      // When index > RAY, getVTokenMintScaledAmount uses rayDivCeil, and
+      // getVTokenBalance uses rayMulCeil, so actual debt >= raw amount.
+      // The delegation allowance must be decremented by the actual debt increase.
+      const ctx = await networkHelpers.loadFixture(deployMarket);
+      const { pool, weth, usdc, varDebtUsdc, user1, user2, deployer } = ctx;
+      await setupCollateralAndBorrow(ctx);
+
+      // user2 also needs collateral so debt on their behalf is backed
+      const wethUser2 = 10n * WAD;
+      await weth.write.mint([user2.account.address, wethUser2]);
+      await weth.write.approve([pool.address, wethUser2], { account: user2.account });
+      await pool.write.supply([weth.address, wethUser2, user2.account.address, 0], {
+        account: user2.account,
+      });
+
+      // user1 borrows to generate interest activity
+      const initialBorrow = 1_000n * 10n ** 6n;
+      await pool.write.borrow(
+        [usdc.address, initialBorrow, VARIABLE_RATE_MODE, 0, user1.account.address],
+        { account: user1.account }
+      );
+
+      // Advance time so variable borrow index > RAY
+      await networkHelpers.time.increase(365 * 24 * 3600);
+
+      // user2 approves delegation for user1 to borrow on their behalf
+      const delegationAllowance = 500n * 10n ** 6n;
+      await varDebtUsdc.write.approveDelegation([user1.account.address, delegationAllowance], {
+        account: user2.account,
+      });
+
+      // user1 borrows on behalf of user2
+      const borrowAmount = 100n * 10n ** 6n;
+      const debtBefore = await varDebtUsdc.read.balanceOf([user2.account.address]);
+
+      await pool.write.borrow(
+        [usdc.address, borrowAmount, VARIABLE_RATE_MODE, 0, user2.account.address],
+        { account: user1.account }
+      );
+
+      const debtAfter = await varDebtUsdc.read.balanceOf([user2.account.address]);
+      const allowanceAfter = await varDebtUsdc.read.borrowAllowance([
+        user2.account.address,
+        user1.account.address,
+      ]);
+
+      const debtIncrease = debtAfter - debtBefore;
+      const allowanceConsumed = delegationAllowance - allowanceAfter;
+
+      // Key assertion: allowance consumed must equal the actual debt increase
+      assert.equal(
+        allowanceConsumed,
+        debtIncrease,
+        'delegation allowance consumed must match the actual debt increase'
+      );
+
+      // The consumed amount may be >= raw borrowAmount due to ceil rounding
+      assert.ok(
+        allowanceConsumed >= borrowAmount,
+        'delegation allowance consumed must be >= raw amount (rounding is protocol-favoring)'
+      );
+    });
+
+    it('repeated delegated borrows never consume less allowance than debt increase', async () => {
+      const ctx = await networkHelpers.loadFixture(deployMarket);
+      const { pool, weth, usdc, varDebtUsdc, user1, user2, deployer } = ctx;
+      await setupCollateralAndBorrow(ctx);
+
+      // user2 needs collateral
+      const wethUser2 = 10n * WAD;
+      await weth.write.mint([user2.account.address, wethUser2]);
+      await weth.write.approve([pool.address, wethUser2], { account: user2.account });
+      await pool.write.supply([weth.address, wethUser2, user2.account.address, 0], {
+        account: user2.account,
+      });
+
+      // Generate interest activity so index > RAY
+      const initialBorrow = 1_000n * 10n ** 6n;
+      await pool.write.borrow(
+        [usdc.address, initialBorrow, VARIABLE_RATE_MODE, 0, user1.account.address],
+        { account: user1.account }
+      );
+      await networkHelpers.time.increase(365 * 24 * 3600);
+
+      // user2 approves large delegation
+      const bigAllowance = 2_000n * 10n ** 6n;
+      await varDebtUsdc.write.approveDelegation([user1.account.address, bigAllowance], {
+        account: user2.account,
+      });
+
+      const debtStart = await varDebtUsdc.read.balanceOf([user2.account.address]);
+
+      // Do 5 small delegated borrows
+      const borrowAmt = 50n * 10n ** 6n;
+      for (let i = 0; i < 5; i++) {
+        await pool.write.borrow(
+          [usdc.address, borrowAmt, VARIABLE_RATE_MODE, 0, user2.account.address],
+          { account: user1.account }
+        );
+      }
+
+      const debtEnd = await varDebtUsdc.read.balanceOf([user2.account.address]);
+      const allowanceEnd = await varDebtUsdc.read.borrowAllowance([
+        user2.account.address,
+        user1.account.address,
+      ]);
+
+      const totalDebtIncrease = debtEnd - debtStart;
+      const totalAllowanceConsumed = bigAllowance - allowanceEnd;
+
+      // The key invariant: a delegatee can never cause more debt than allowance consumed
+      assert.ok(
+        totalAllowanceConsumed >= totalDebtIncrease,
+        'cumulative delegation allowance consumed must be >= cumulative debt increase'
+      );
+    });
+  });
+
   // ── multi-reserve borrow ─────────────────────────────────────────────────────
 
   describe('multi-asset borrow', () => {
