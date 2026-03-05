@@ -246,7 +246,7 @@ contract AToken is VersionedInitializable, ScaledBalanceTokenBase, EIP712Base, I
     uint256 index = POOL.getReserveNormalizedIncome(_underlyingAsset);
     uint256 amountScaled = TokenMath.getATokenTransferScaledAmount(amount, index);
     uint256 actualAmount = TokenMath.getATokenBalance(amountScaled, index);
-    _approve(sender, _msgSender(), _allowances[sender][_msgSender()] - actualAmount);
+    _spendAllowance(sender, _msgSender(), amount, actualAmount);
     _transfer(sender, recipient, amount, true);
     return true;
   }

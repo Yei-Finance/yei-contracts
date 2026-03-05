@@ -52,7 +52,7 @@ abstract contract IncentivizedERC20 is Context, IERC20Detailed {
   mapping(address => UserState) internal _userState;
 
   // Map of allowances (delegator => delegatee => allowanceAmount)
-  mapping(address => mapping(address => uint256)) internal _allowances;
+  mapping(address => mapping(address => uint256)) private _allowances;
 
   uint256 internal _totalSupply;
   string private _name;
@@ -207,6 +207,31 @@ abstract contract IncentivizedERC20 is Context, IERC20Detailed {
   function _approve(address owner, address spender, uint256 amount) internal virtual {
     _allowances[owner][spender] = amount;
     emit Approval(owner, spender, amount);
+  }
+
+  /**
+   * @notice Spends allowance for scaled-balance tokens with backward compatibility.
+   * @dev Requires `currentAllowance >= amount` (the raw input). The actual consumption is
+   * `correctedAmount`, capped at `currentAllowance`. This ensures that integrations which
+   * approve exactly `amount` still work, even when rounding makes the real cost slightly higher.
+   * @param owner The address owning the tokens
+   * @param spender The address spending the tokens
+   * @param amount The raw transfer amount (used for the minimum-allowance check)
+   * @param correctedAmount The actual balance decrease to consume from the allowance
+   */
+  function _spendAllowance(
+    address owner,
+    address spender,
+    uint256 amount,
+    uint256 correctedAmount
+  ) internal virtual {
+    uint256 currentAllowance = _allowances[owner][spender];
+    require(currentAllowance >= amount, Errors.INSUFFICIENT_ALLOWANCE);
+    if (currentAllowance == type(uint256).max) {
+      return;
+    }
+    uint256 consumption = currentAllowance >= correctedAmount ? correctedAmount : currentAllowance;
+    _approve(owner, spender, currentAllowance - consumption);
   }
 
   /**
