@@ -97,7 +97,7 @@ library Errors {
   string public constant SILOED_BORROWING_VIOLATION = '89'; // 'User is trying to borrow multiple assets including a siloed one'
   string public constant RESERVE_DEBT_NOT_ZERO = '90'; // the total debt of the reserve needs to be 0
   string public constant FLASHLOAN_DISABLED = '91'; // FlashLoaning for this asset is disabled
-  string public constant INSUFFICIENT_ALLOWANCE = '92'; // 'Insufficient allowance for the operation'
-  string public constant SELF_LIQUIDATION_NOT_ALLOWED = '93'; // 'Self-liquidation is not allowed'
   string public constant FORCED_LIQUIDATION_CALLER_NOT_AUTHORIZED = '128'; // Caller not authorized for forced liquidation
+  string public constant INSUFFICIENT_ALLOWANCE = '129'; // 'Insufficient allowance for the operation'
+  string public constant SELF_LIQUIDATION_NOT_ALLOWED = '130'; // 'Self-liquidation is not allowed'
 }
