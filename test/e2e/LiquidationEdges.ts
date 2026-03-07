@@ -17,7 +17,79 @@ const { networkHelpers } = await network.connect();
 
 const STABLE_RATE_MODE = 1n;
 
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+async function setupLiquidatableUser(ctx: Awaited<ReturnType<typeof deployMarket>>) {
+  const { pool, oracle, weth, usdc, user1, deployer } = ctx;
+
+  // deployer seeds USDC liquidity
+  const usdcLiquidity = 1_000_000n * 10n ** 6n;
+  await usdc.write.mint([deployer.account.address, usdcLiquidity]);
+  await usdc.write.approve([pool.address, usdcLiquidity]);
+  await pool.write.supply([usdc.address, usdcLiquidity, deployer.account.address, 0]);
+
+  // user1 supplies 10 WETH, borrows near max
+  const wethCollateral = 10n * WAD;
+  await weth.write.mint([user1.account.address, wethCollateral]);
+  await weth.write.approve([pool.address, wethCollateral], { account: user1.account });
+  await pool.write.supply([weth.address, wethCollateral, user1.account.address, 0], {
+    account: user1.account,
+  });
+
+  const borrowAmount = 16_000n * 10n ** 6n;
+  await pool.write.borrow(
+    [usdc.address, borrowAmount, VARIABLE_RATE_MODE, 0, user1.account.address],
+    { account: user1.account }
+  );
+
+  // Drop WETH price to make user1 liquidatable
+  await oracle.write.setAssetPrice([weth.address, 1_000n * 10n ** 8n]);
+
+  const data = await pool.read.getUserAccountData([user1.account.address]);
+  assert.ok(data[5] < 10n ** 18n, 'HF must be < 1 after price drop');
+}
+
 describe('E2E: Liquidation Edge Cases', () => {
+  // ── self-liquidation blocked ────────────────────────────────────────────────
+
+  describe('self-liquidation is not allowed', () => {
+    it('liquidationCall reverts when msg.sender == user (receiveAToken=false)', async () => {
+      const ctx = await networkHelpers.loadFixture(deployMarket);
+      const { pool, weth, usdc, user1 } = ctx;
+      await setupLiquidatableUser(ctx);
+
+      const debtToCover = 1_000n * 10n ** 6n;
+      await usdc.write.mint([user1.account.address, debtToCover]);
+      await usdc.write.approve([pool.address, debtToCover], { account: user1.account });
+
+      await assert.rejects(
+        pool.write.liquidationCall(
+          [weth.address, usdc.address, user1.account.address, debtToCover, false],
+          { account: user1.account }
+        ),
+        'self-liquidation must revert'
+      );
+    });
+
+    it('liquidationCall reverts when msg.sender == user (receiveAToken=true)', async () => {
+      const ctx = await networkHelpers.loadFixture(deployMarket);
+      const { pool, weth, usdc, user1 } = ctx;
+      await setupLiquidatableUser(ctx);
+
+      const debtToCover = 1_000n * 10n ** 6n;
+      await usdc.write.mint([user1.account.address, debtToCover]);
+      await usdc.write.approve([pool.address, debtToCover], { account: user1.account });
+
+      await assert.rejects(
+        pool.write.liquidationCall(
+          [weth.address, usdc.address, user1.account.address, debtToCover, true],
+          { account: user1.account }
+        ),
+        'self-liquidation with receiveAToken must revert'
+      );
+    });
+  });
+
   // ── ValidationLogic line 721: auto-collateral disabled for LTV=0 reserve ─
 
   describe('validateUseAsCollateral returns false when LTV=0 (ValidationLogic line 721)', () => {
