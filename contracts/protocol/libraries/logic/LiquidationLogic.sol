@@ -5,6 +5,7 @@ import {IERC20} from '../../../dependencies/openzeppelin/contracts//IERC20.sol';
 import {GPv2SafeERC20} from '../../../dependencies/gnosis/contracts/GPv2SafeERC20.sol';
 import {PercentageMath} from '../../libraries/math/PercentageMath.sol';
 import {WadRayMath} from '../../libraries/math/WadRayMath.sol';
+import {Errors} from '../../libraries/helpers/Errors.sol';
 import {Helpers} from '../../libraries/helpers/Helpers.sol';
 import {DataTypes} from '../../libraries/types/DataTypes.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
@@ -18,6 +19,7 @@ import {IAToken} from '../../../interfaces/IAToken.sol';
 import {IStableDebtToken} from '../../../interfaces/IStableDebtToken.sol';
 import {IVariableDebtToken} from '../../../interfaces/IVariableDebtToken.sol';
 import {IPriceOracleGetter} from '../../../interfaces/IPriceOracleGetter.sol';
+import {TokenMath} from '../helpers/TokenMath.sol';
 
 /**
  * @title LiquidationLogic library
@@ -109,6 +111,8 @@ library LiquidationLogic {
     mapping(uint8 => DataTypes.EModeCategory) storage eModeCategories,
     DataTypes.ExecuteLiquidationCallParams memory params
   ) external {
+    require(msg.sender != params.user, Errors.SELF_LIQUIDATION_NOT_ALLOWED);
+
     LiquidationCallLocalVars memory vars;
 
     DataTypes.ReserveData storage collateralReserve = reservesData[params.collateralAsset];
@@ -211,13 +215,19 @@ library LiquidationLogic {
     // Transfer fee to treasury if it is non-zero
     if (vars.liquidationProtocolFeeAmount != 0) {
       uint256 liquidityIndex = collateralReserve.getNormalizedIncome();
-      uint256 scaledDownLiquidationProtocolFee = vars.liquidationProtocolFeeAmount.rayDiv(
+      // Use rayDivCeil to match the ceil rounding applied by transferOnLiquidation, so the
+      // guard never misses an overshoot by 1 scaled unit. Cap using rayMulFloor so the
+      // resulting fee amount ceil-divides back to exactly scaledDownUserBalance.
+      uint256 scaledDownLiquidationProtocolFee = TokenMath.getATokenBurnScaledAmount(
+        vars.liquidationProtocolFeeAmount,
         liquidityIndex
       );
       uint256 scaledDownUserBalance = vars.collateralAToken.scaledBalanceOf(params.user);
-      // To avoid trying to send more aTokens than available on balance, due to 1 wei imprecision
       if (scaledDownLiquidationProtocolFee > scaledDownUserBalance) {
-        vars.liquidationProtocolFeeAmount = scaledDownUserBalance.rayMul(liquidityIndex);
+        vars.liquidationProtocolFeeAmount = TokenMath.getATokenBalance(
+          scaledDownUserBalance,
+          liquidityIndex
+        );
       }
       vars.collateralAToken.transferOnLiquidation(
         params.user,
@@ -353,7 +363,7 @@ library LiquidationLogic {
     LiquidationCallLocalVars memory vars
   ) internal {
     if (vars.userVariableDebt >= vars.actualDebtToLiquidate) {
-      vars.debtReserveCache.nextScaledVariableDebt = IVariableDebtToken(
+      (, vars.debtReserveCache.nextScaledVariableDebt) = IVariableDebtToken(
         vars.debtReserveCache.variableDebtTokenAddress
       ).burn(
           params.user,
@@ -363,7 +373,7 @@ library LiquidationLogic {
     } else {
       // If the user doesn't have variable debt, no need to try to burn variable debt tokens
       if (vars.userVariableDebt != 0) {
-        vars.debtReserveCache.nextScaledVariableDebt = IVariableDebtToken(
+        (, vars.debtReserveCache.nextScaledVariableDebt) = IVariableDebtToken(
           vars.debtReserveCache.variableDebtTokenAddress
         ).burn(params.user, vars.userVariableDebt, vars.debtReserveCache.nextVariableBorrowIndex);
       }

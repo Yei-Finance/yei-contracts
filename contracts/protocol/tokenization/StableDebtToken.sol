@@ -130,7 +130,7 @@ contract StableDebtToken is DebtTokenBase, IncentivizedERC20, IStableDebtToken {
     MintLocalVars memory vars;
 
     if (user != onBehalfOf) {
-      _decreaseBorrowAllowance(onBehalfOf, user, amount);
+      _decreaseBorrowAllowance(onBehalfOf, user, amount, amount);
     }
 
     (, uint256 currentBalance, uint256 balanceIncrease) = _calculateBalanceIncrease(onBehalfOf);

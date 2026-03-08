@@ -12,6 +12,7 @@ import {PercentageMath} from '../math/PercentageMath.sol';
 import {ValidationLogic} from './ValidationLogic.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
 import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
+import {TokenMath} from '../helpers/TokenMath.sol';
 
 /**
  * @title SupplyLogic library
@@ -19,6 +20,7 @@ import {ReserveConfiguration} from '../configuration/ReserveConfiguration.sol';
  * @notice Implements the base logic for supply/withdraw
  */
 library SupplyLogic {
+  using TokenMath for uint256;
   using ReserveLogic for DataTypes.ReserveCache;
   using ReserveLogic for DataTypes.ReserveData;
   using GPv2SafeERC20 for IERC20;
@@ -115,9 +117,9 @@ library SupplyLogic {
 
     reserve.updateState(reserveCache);
 
-    uint256 userBalance = IAToken(reserveCache.aTokenAddress).scaledBalanceOf(msg.sender).rayMul(
-      reserveCache.nextLiquidityIndex
-    );
+    uint256 userBalance = IAToken(reserveCache.aTokenAddress)
+      .scaledBalanceOf(msg.sender)
+      .getATokenBalance(reserveCache.nextLiquidityIndex);
 
     uint256 amountToWithdraw = params.amount;
 
