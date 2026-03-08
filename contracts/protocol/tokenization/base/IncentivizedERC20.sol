@@ -210,6 +210,31 @@ abstract contract IncentivizedERC20 is Context, IERC20Detailed {
   }
 
   /**
+   * @notice Spends allowance for scaled-balance tokens with backward compatibility.
+   * @dev Requires `currentAllowance >= amount` (the raw input). The actual consumption is
+   * `correctedAmount`, capped at `currentAllowance`. This ensures that integrations which
+   * approve exactly `amount` still work, even when rounding makes the real cost slightly higher.
+   * @param owner The address owning the tokens
+   * @param spender The address spending the tokens
+   * @param amount The raw transfer amount (used for the minimum-allowance check)
+   * @param correctedAmount The actual balance decrease to consume from the allowance
+   */
+  function _spendAllowance(
+    address owner,
+    address spender,
+    uint256 amount,
+    uint256 correctedAmount
+  ) internal virtual {
+    uint256 currentAllowance = _allowances[owner][spender];
+    require(currentAllowance >= amount, Errors.INSUFFICIENT_ALLOWANCE);
+    if (currentAllowance == type(uint256).max) {
+      return;
+    }
+    uint256 consumption = currentAllowance >= correctedAmount ? correctedAmount : currentAllowance;
+    _approve(owner, spender, currentAllowance - consumption);
+  }
+
+  /**
    * @notice Update the name of the token
    * @param newName The new name for the token
    */

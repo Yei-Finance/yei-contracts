@@ -5,6 +5,7 @@ import {IERC20} from '../../../dependencies/openzeppelin/contracts//IERC20.sol';
 import {GPv2SafeERC20} from '../../../dependencies/gnosis/contracts/GPv2SafeERC20.sol';
 import {PercentageMath} from '../../libraries/math/PercentageMath.sol';
 import {WadRayMath} from '../../libraries/math/WadRayMath.sol';
+import {Errors} from '../../libraries/helpers/Errors.sol';
 import {Helpers} from '../../libraries/helpers/Helpers.sol';
 import {DataTypes} from '../../libraries/types/DataTypes.sol';
 import {ReserveLogic} from './ReserveLogic.sol';
@@ -110,6 +111,8 @@ library LiquidationLogic {
     mapping(uint8 => DataTypes.EModeCategory) storage eModeCategories,
     DataTypes.ExecuteLiquidationCallParams memory params
   ) external {
+    require(msg.sender != params.user, Errors.SELF_LIQUIDATION_NOT_ALLOWED);
+
     LiquidationCallLocalVars memory vars;
 
     DataTypes.ReserveData storage collateralReserve = reservesData[params.collateralAsset];

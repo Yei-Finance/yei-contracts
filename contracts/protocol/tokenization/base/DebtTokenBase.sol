@@ -88,12 +88,27 @@ abstract contract DebtTokenBase is
 
   /**
    * @notice Decreases the borrow allowance of a user on the specific debt token.
+   * @dev Requires `currentAllowance >= amount` (the raw input). The actual consumption is
+   * `correctedAmount`, capped at `currentAllowance`. This ensures that integrations which
+   * approve exactly `amount` still work, even when rounding makes the real cost slightly higher.
    * @param delegator The address delegating the borrowing power
    * @param delegatee The address receiving the delegated borrowing power
-   * @param amount The amount to subtract from the current allowance
+   * @param amount The raw borrow amount (used for the minimum-allowance check)
+   * @param correctedAmount The actual debt increase to consume from the allowance
    */
-  function _decreaseBorrowAllowance(address delegator, address delegatee, uint256 amount) internal {
-    uint256 newAllowance = _borrowAllowances[delegator][delegatee] - amount;
+  function _decreaseBorrowAllowance(
+    address delegator,
+    address delegatee,
+    uint256 amount,
+    uint256 correctedAmount
+  ) internal {
+    uint256 currentAllowance = _borrowAllowances[delegator][delegatee];
+    require(currentAllowance >= amount, Errors.INSUFFICIENT_ALLOWANCE);
+    if (currentAllowance == type(uint256).max) {
+      return;
+    }
+    uint256 consumption = currentAllowance >= correctedAmount ? correctedAmount : currentAllowance;
+    uint256 newAllowance = currentAllowance - consumption;
 
     _borrowAllowances[delegator][delegatee] = newAllowance;
 
