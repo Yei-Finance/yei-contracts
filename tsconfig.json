@@ -1,19 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es2019",
-    "module": "commonjs",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
-    "outDir": "dist",
-    "noImplicitAny": false,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationDir": "./types"
+    "outDir": "dist"
   },
-  "include": ["./scripts", "./test-suites", "./tasks", "./helpers"],
-  "files": [
-    "./hardhat.config.ts",
-    "node_modules/@nomiclabs/hardhat-etherscan/src/type-extensions.ts",
-    "node_modules/hardhat-gas-reporter/src/type-extensions.ts"
-  ]
+  "include": ["./hardhat.config.ts", "./test"]
 }
